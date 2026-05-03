@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>King of the Court</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh;}
+.app{max-width:980px;margin:0 auto;padding:1.5rem 1rem;}
+.header{text-align:center;margin-bottom:2rem;}
+.header h1{font-size:28px;font-weight:600;letter-spacing:-0.5px;}
+.header p{font-size:14px;color:#666;margin-top:4px;}
+.tabs{display:flex;gap:4px;margin-bottom:1.5rem;background:#e8e7e3;border-radius:10px;padding:4px;}
+.tab{flex:1;padding:8px 4px;font-size:12px;cursor:pointer;border:none;background:none;color:#666;border-radius:7px;transition:all 0.15s;}
+.tab.active{background:#fff;color:#1a1a1a;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+.tab:disabled{opacity:0.35;cursor:not-allowed;}
+.sec{display:none;}.sec.active{display:block;}
+.card{background:#fff;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;border:1px solid #e5e4e0;}
+.card-title{font-size:14px;font-weight:600;margin-bottom:12px;}
+input[type="text"],input[type="number"]{height:36px;padding:0 10px;font-size:13px;border:1px solid #d5d4d0;border-radius:8px;background:#faf9f7;color:#1a1a1a;outline:none;}
+input:focus{border-color:#999;background:#fff;}
+.btn{padding:8px 16px;font-size:13px;cursor:pointer;border:1px solid #d5d4d0;border-radius:8px;background:#fff;color:#1a1a1a;transition:all 0.12s;}
+.btn:hover{background:#f5f4f0;}
+.btn.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500;}
+.btn.primary:hover{background:#333;}
+.btn.sm{padding:5px 11px;font-size:12px;}
+.ptag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:#f0efe9;border:1px solid #e0dfd9;font-size:13px;margin:3px;}
+.ptag .x{cursor:pointer;color:#999;font-size:11px;}
+.plist{display:flex;flex-wrap:wrap;min-height:44px;padding:8px;border:1px dashed #ccc;border-radius:8px;margin-top:8px;align-items:flex-start;align-content:flex-start;}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:640px){.pgrid{grid-template-columns:1fr;}}
+.pool-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.pool-label{font-size:13px;font-weight:600;}
+.pool-badge{font-size:11px;padding:2px 8px;border-radius:99px;background:#e8f0fe;color:#1a56db;}
+.divider{height:1px;background:#f0efe9;margin:10px 0;}
+.gc{border:1px solid #eeede9;border-radius:10px;padding:12px;margin-bottom:10px;transition:border-color 0.15s;}
+.gc.live{border-color:#f0883e;background:#fffbf7;}
+.gc.done{border-color:#16a34a;background:#f0fdf4;}
+.glabel{display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:8px;align-items:center;}
+.sit{font-style:italic;color:#f0883e;font-weight:500;}
+.game-state{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600;letter-spacing:0.3px;}
+.gs-waiting{background:#f3f4f6;color:#6b7280;}
+.gs-live{background:#fff3e0;color:#e65100;}
+.gs-done{background:#dcfce7;color:#15803d;}
+.sitter-overlay{display:none;position:fixed;inset:0;background:#fff;z-index:1000;overflow-y:auto;}
+.sitter-overlay.active{display:block;}
+.sitter-inner{max-width:480px;margin:0 auto;padding:1.5rem 1rem;}
+.sitter-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
+.sitter-header h2{font-size:20px;font-weight:700;}
+.close-sitter{font-size:22px;background:none;border:none;cursor:pointer;color:#666;padding:4px 8px;}
+.sitter-game-label{font-size:13px;color:#888;margin-bottom:1rem;}
+.sitter-board{display:grid;grid-template-columns:1fr auto 1fr;gap:0;border-radius:16px;overflow:hidden;border:1px solid #e5e4e0;margin-bottom:1.5rem;}
+.sitter-team{padding:1.5rem 1rem;text-align:center;background:#faf9f7;}
+.sitter-team.winning{background:#f0fdf4;}
+.sitter-team-names{font-size:14px;font-weight:700;margin-bottom:12px;line-height:1.4;}
+.sitter-score{font-size:72px;font-weight:800;line-height:1;margin-bottom:16px;}
+.sitter-team.winning .sitter-score{color:#15803d;}
+.sitter-mid{background:#f5f4f0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#aaa;font-weight:700;padding:0 4px;}
+.sitter-tap{width:100%;height:64px;font-size:28px;font-weight:800;border:none;border-radius:10px;cursor:pointer;margin-bottom:6px;transition:transform 0.08s;-webkit-tap-highlight-color:transparent;}
+.sitter-tap:active{transform:scale(0.93);}
+.sitter-tap.plus1{background:#1a1a1a;color:#fff;}
+.sitter-tap.minus1{background:#f3f4f6;color:#6b7280;font-size:18px;}
+.sitter-cap-note{font-size:12px;color:#888;text-align:center;margin-bottom:1rem;}
+.sitter-submit{width:100%;padding:16px;font-size:16px;font-weight:700;background:#16a34a;color:#fff;border:none;border-radius:12px;cursor:pointer;margin-bottom:8px;}
+.sitter-submit:hover{background:#15803d;}
+.sitter-submit:disabled{opacity:0.4;cursor:not-allowed;}
+.sitter-reset{width:100%;padding:10px;font-size:13px;background:#f3f4f6;color:#6b7280;border:none;border-radius:8px;cursor:pointer;}
+.win-by-note{font-size:12px;color:#888;text-align:center;margin-bottom:12px;min-height:18px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{text-align:left;padding:8px 10px;font-weight:500;font-size:12px;color:#888;border-bottom:1px solid #f0efe9;background:#faf9f7;}
+tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:#fdfcfa;}
+.gold{color:#b45309;font-weight:600;}
+.silver{color:#6b7280;font-weight:600;}
+.bronze{color:#92400e;font-weight:600;}
+.gr{color:#9ca3af;}
+.bw{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;background:#dcfce7;color:#15803d;font-weight:500;}
+.bl{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;background:#fee2e2;color:#b91c1c;font-weight:500;}
+.pn{font-size:11px;padding:2px 7px;border-radius:99px;background:#f3f4f6;color:#6b7280;display:inline-block;}
+.stat-row{display:flex;gap:2rem;flex-wrap:wrap;}
+.stat-label{font-size:12px;color:#888;margin-bottom:2px;}
+.stat-val{font-size:22px;font-weight:600;}
+.actions{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;}
+.err{margin-top:8px;font-size:13px;color:#dc2626;}
+.info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:13px;color:#1e40af;margin-bottom:1rem;}
+.pp{font-size:12px;color:#888;margin-top:6px;}
+.sb{font-size:11px;color:#aaa;}
+.tour-badge{display:inline-block;padding:6px 12px;background:#1a56db;color:#fff;border-radius:8px;font-size:12px;font-weight:600;margin-top:8px;}
+.tour-id{font-family:monospace;font-size:13px;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>🏐 King of the Court</h1>
+    <p>Live 2v2 tournament scoring with Firebase sync</p>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="goTab(0)" id="tab0">Setup</button>
+    <button class="tab" onclick="goTab(1)" id="tab1" disabled>Round 1</button>
+    <button class="tab" onclick="goTab(2)" id="tab2" disabled>R1 standings</button>
+    <button class="tab" onclick="goTab(3)" id="tab3" disabled>Round 2</button>
+    <button class="tab" onclick="goTab(4)" id="tab4" disabled>Final standings</button>
+  </div>
+
+  <!-- SETUP -->
+  <div class="sec active" id="sec0">
+    <div class="card">
+      <div class="card-title">Tournament setup</div>
+      <div id="setupMode">
+        <div style="margin-bottom:12px;">
+          <button class="btn primary" style="margin-right:8px;" onclick="setOrgMode()">I'm the organizer</button>
+          <button class="btn" onclick="setSitterMode()">I'm a sitter (join tournament)</button>
+        </div>
+      </div>
+      <div id="orgSetup" style="display:none;">
+        <div class="card-title" style="margin-top:12px;">Tournament settings</div>
+        <div style="font-size:13px;color:#444;margin-bottom:8px;">Point limits &amp; caps by pool size:</div>
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;background:#e8f0fe;color:#1a56db;">5 players</span>
+            <span style="font-size:13px;color:#444;">to <strong>15</strong>, cap <strong>21</strong>, win by 2</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;background:#fef3c7;color:#92400e;">4 players</span>
+            <span style="font-size:13px;color:#444;">to <strong>21</strong>, cap <strong>28</strong>, win by 2</span>
+          </div>
+        </div>
+        <div class="card-title" style="margin-top:12px;">Add players</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="pi" placeholder="Player name..." style="flex:1;" onkeydown="if(event.key==='Enter')addP()"/>
+          <button class="btn" onclick="addP()">Add</button>
+        </div>
+        <div class="plist" id="plist"><span style="font-size:12px;color:#bbb;align-self:center;">No players yet — add at least 4</span></div>
+        <div style="margin-top:8px;font-size:12px;color:#888;" id="pc">0 players</div>
+        <div class="pp" id="pp"></div>
+        <div class="actions"><button class="btn primary" onclick="startR1()">Generate Round 1 pools →</button></div>
+        <div class="err" id="se"></div>
+      </div>
+      <div id="sitterSetup" style="display:none;">
+        <div style="margin-top:12px;font-size:13px;color:#444;">
+          <p style="margin-bottom:12px;">Enter the tournament ID to join and start scoring:</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <input type="text" id="joinTourId" placeholder="Tournament ID (e.g. abc123)" style="flex:1;font-family:monospace;font-size:14px;" onkeydown="if(event.key==='Enter')joinTournament()"/>
+            <button class="btn primary" onclick="joinTournament()">Join</button>
+          </div>
+          <div class="err" id="joinErr"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROUND 1 -->
+  <div class="sec" id="sec1">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <div class="info-box" id="r1i" style="margin-bottom:0;flex:1;"></div>
+      <div id="tourIdBadge" style="margin-left:1rem;"></div>
+    </div>
+    <div id="r1p"></div>
+    <div class="actions" id="orgActions1"><button class="btn primary" onclick="lockR1()">Lock Round 1 &amp; view standings →</button></div>
+    <div class="err" id="r1e"></div>
+  </div>
+
+  <!-- R1 STANDINGS -->
+  <div class="sec" id="sec2">
+    <div id="r1sc"></div>
+    <div class="actions" id="orgActions2"><button class="btn primary" onclick="startR2()">Generate Round 2 pools →</button></div>
+  </div>
+
+  <!-- ROUND 2 -->
+  <div class="sec" id="sec3">
+    <div class="info-box" id="r2i"></div>
+    <div id="r2p"></div>
+    <div class="actions" id="orgActions3"><button class="btn primary" onclick="lockR2()">Generate final standings →</button></div>
+    <div class="err" id="r2e"></div>
+  </div>
+
+  <!-- FINAL STANDINGS -->
+  <div class="sec" id="sec4"><div id="sc"></div></div>
+</div>
+
+<!-- SITTER OVERLAY -->
+<div class="sitter-overlay" id="sitterOverlay">
+  <div class="sitter-inner">
+    <div class="sitter-header">
+      <h2>Live scoring</h2>
+      <button class="close-sitter" onclick="closeSitter()">✕</button>
+    </div>
+    <div class="sitter-game-label" id="sitterLabel"></div>
+    <div class="sitter-board">
+      <div class="sitter-team" id="st1">
+        <div class="sitter-team-names" id="st1names"></div>
+        <div class="sitter-score" id="st1score">0</div>
+        <button class="sitter-tap plus1" onclick="sitterTap(1,1)">+1</button>
+        <button class="sitter-tap minus1" onclick="sitterTap(1,-1)">−1</button>
+      </div>
+      <div class="sitter-mid">VS</div>
+      <div class="sitter-team" id="st2">
+        <div class="sitter-team-names" id="st2names"></div>
+        <div class="sitter-score" id="st2score">0</div>
+        <button class="sitter-tap plus1" onclick="sitterTap(2,1)">+1</button>
+        <button class="sitter-tap minus1" onclick="sitterTap(2,-1)">−1</button>
+      </div>
+    </div>
+    <div class="win-by-note" id="winByNote"></div>
+    <div class="sitter-cap-note" id="sitterCapNote"></div>
+    <button class="sitter-submit" id="sitterSubmit" onclick="submitSitter()">Submit final score</button>
+    <button class="sitter-reset" onclick="resetSitter()">Reset scores to 0</button>
+  </div>
+</div>
+
+<script type="module">
+(async () => {
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js");
+  const { getFirestore, collection, addDoc, doc, setDoc, getDoc, query, where, onSnapshot, updateDoc } = await import("https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js");
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBQAx2DK8mm7lyGTqaqhWYfTTTBc3DznUg",
+    authDomain: "kob-tournament-d7241.firebaseapp.com",
+    projectId: "kob-tournament-d7241",
+    storageBucket: "kob-tournament-d7241.appspot.com",
+    messagingSenderId: "147933432566",
+    appId: "1:147933432566:web:9f4377719d51b058b9fad7",
+    measurementId: "G-MPZYLNG6QJ"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+/* ── GLOBALS ── */
+const MAXPOOL = 5;
+function poolRules(sz){ return sz===4?{target:21,cap:28}:{target:15,cap:21}; }
+
+let isOrganizer = false;
+let tournamentId = null;
+let players = [], r1pools = [], r2pools = [], r1g = {}, r2g = {};
+let sitter = { pfx:null, k:null, s1:0, s2:0, ptTarget:15, ptCap:21 };
+
+// Generate unique tournament ID
+function genTourId() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function goTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.sec').forEach((s,i)=>s.classList.toggle('active',i===n));
+}
+
+/* ── MODE SELECTION ── */
+function setOrgMode(){
+  isOrganizer = true;
+  tournamentId = genTourId();
+  document.getElementById('setupMode').style.display = 'none';
+  document.getElementById('orgSetup').style.display = 'block';
+  document.getElementById('sitterSetup').style.display = 'none';
+  renderTourIdBadge();
+}
+function setSitterMode(){
+  isOrganizer = false;
+  document.getElementById('setupMode').style.display = 'none';
+  document.getElementById('orgSetup').style.display = 'none';
+  document.getElementById('sitterSetup').style.display = 'block';
+}
+
+function renderTourIdBadge(){
+  if(!tournamentId) return;
+  const url = window.location.href.split('?')[0] + '?tournament=' + tournamentId;
+  document.getElementById('tourIdBadge').innerHTML = `
+    <div class="tour-badge">
+      Tournament: <span class="tour-id">${tournamentId}</span><br/>
+      <span style="font-size:11px;color:#bfdbfe;">Share with sitters →</span>
+    </div>
+  `;
+}
+
+async function joinTournament(){
+  const tid = document.getElementById('joinTourId').value.trim().toUpperCase();
+  document.getElementById('joinErr').textContent = '';
+  if(!tid) { document.getElementById('joinErr').textContent = 'Enter tournament ID.'; return; }
+  try {
+    const tourRef = doc(db, 'tournaments', tid);
+    const tourSnap = await getDoc(tourRef);
+    if(!tourSnap.exists()) { document.getElementById('joinErr').textContent = 'Tournament not found.'; return; }
+    tournamentId = tid;
+    isOrganizer = false;
+    // Listen to tournament updates and render rounds as they become available
+    listenToTournament();
+  } catch(e) {
+    document.getElementById('joinErr').textContent = 'Error: ' + e.message;
+  }
+}
+
+function listenToTournament(){
+  const tourRef = doc(db, 'tournaments', tournamentId);
+  onSnapshot(tourRef, (snap) => {
+    if(!snap.exists()) return;
+    const data = snap.data();
+    // Load state from Firebase
+    if(data.players) players = data.players;
+    if(data.r1pools) r1pools = data.r1pools;
+    if(data.r2pools) r2pools = data.r2pools;
+    // Refresh current view
+    const activeTab = document.querySelector('.tab.active');
+    if(activeTab) {
+      const tabIdx = Array.from(document.querySelectorAll('.tab')).indexOf(activeTab);
+      refreshTab(tabIdx);
+    }
+  });
+  // Listen to game scores
+  listenToScores();
+}
+
+function refreshTab(idx){
+  if(idx===1 && r1pools.length>0) renderRound('r1', r1pools, r1g, 'r1p', 'r1i', null);
+  if(idx===3 && r2pools.length>0) renderRound('r2', r2pools, r2g, 'r2p', 'r2i', null);
+}
+
+function listenToScores(){
+  if(!tournamentId) return;
+  const scoresRef = collection(db, 'tournaments', tournamentId, 'scores');
+  onSnapshot(scoresRef, (snap) => {
+    snap.forEach(doc => {
+      const data = doc.data();
+      if(data.round==='r1' && r1g[data.gameKey]) {
+        r1g[data.gameKey].s1 = data.s1;
+        r1g[data.gameKey].s2 = data.s2;
+        r1g[data.gameKey].saved = true;
+        r1g[data.gameKey].live = false;
+      }
+      if(data.round==='r2' && r2g[data.gameKey]) {
+        r2g[data.gameKey].s1 = data.s1;
+        r2g[data.gameKey].s2 = data.s2;
+        r2g[data.gameKey].saved = true;
+        r2g[data.gameKey].live = false;
+      }
+    });
+    // Re-render current view
+    const activeTab = document.querySelector('.tab.active');
+    if(activeTab) {
+      const tabIdx = Array.from(document.querySelectorAll('.tab')).indexOf(activeTab);
+      refreshTab(tabIdx);
+    }
+  });
+}
+
+/* ── PLAYER MANAGEMENT ── */
+function addP(){
+  const el = document.getElementById('pi');
+  const name = el.value.trim();
+  if(!name || players.find(p => p.toLowerCase() === name.toLowerCase())) { el.value=''; return; }
+  players.push(name); el.value=''; renderP();
+}
+function delP(i){ players.splice(i,1); renderP(); }
+function renderP(){
+  const el = document.getElementById('plist');
+  el.innerHTML = players.length
+    ? players.map((p,i) => `<div class="ptag">${p}<span class="x" onclick="delP(${i})">✕</span></div>`).join('')
+    : '<span style="font-size:12px;color:#bbb;align-self:center;">No players yet — add at least 4</span>';
+  document.getElementById('pc').textContent = `${players.length} player${players.length!==1?'s':''}`;
+  if(players.length>=4){
+    const pools = makePools(players, MAXPOOL);
+    const sizes = [...new Set(pools.map(p=>p.length))];
+    document.getElementById('pp').textContent = `→ ${pools.length} pool${pools.length>1?'s':''} of ${sizes.join(' or ')} players`;
+  } else { document.getElementById('pp').textContent = ''; }
+}
+
+/* ── UTILITIES ── */
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+function makePools(list, max){
+  const n = Math.ceil(list.length/max);
+  const pools = Array.from({length:n}, ()=>[]);
+  list.forEach((p,i) => pools[i%n].push(p));
+  return pools;
+}
+
+/* ── GAME SCHEDULE ── */
+function makeGames(pool){
+  const q = (i,j) => [pool[i], pool[j]];
+  if(pool.length===4) return [
+    {t1:q(0,1),t2:q(2,3),sit:null},
+    {t1:q(0,2),t2:q(1,3),sit:null},
+    {t1:q(0,3),t2:q(1,2),sit:null},
+  ];
+  if(pool.length===5) return [
+    {t1:q(0,1),t2:q(2,3),sit:pool[4]},
+    {t1:q(0,2),t2:q(1,4),sit:pool[3]},
+    {t1:q(0,3),t2:q(2,4),sit:pool[1]},
+    {t1:q(0,4),t2:q(1,3),sit:pool[2]},
+    {t1:q(1,2),t2:q(3,4),sit:pool[0]},
+  ];
+  return [];
+}
+function gkey(pfx,t1,t2){ return pfx+'__'+[...t1,...t2].slice().sort().join('~'); }
+function buildStore(pfx, pools){
+  const s = {};
+  pools.forEach(pool => makeGames(pool).forEach(g => {
+    const k = gkey(pfx, g.t1, g.t2);
+    s[k] = {...g, s1:0, s2:0, saved:false, live:false};
+  }));
+  return s;
+}
+
+/* ── SCORE VALIDATION ── */
+function isValidFinal(s1,s2,target,cap){
+  if(s1===s2) return false;
+  const winner = Math.max(s1,s2), loser = Math.min(s1,s2);
+  if(winner>cap) return false;
+  if(winner===cap) return true;
+  if(winner<target) return false;
+  if(winner-loser<2) return false;
+  return true;
+}
+function winByNote(s1,s2,target,cap){
+  if(s1===s2 && s1===0) return `First to ${target}, win by 2, cap ${cap}`;
+  const winner = Math.max(s1,s2), loser = Math.min(s1,s2);
+  if(winner===cap) return `Cap reached — ${s1>s2?'Team 1':'Team 2'} wins ${winner}–${loser}`;
+  if(winner>=target && winner-loser<2) return `Win by 2 required — keep playing`;
+  if(winner>=target && winner-loser>=2) return `Valid score — ready to submit`;
+  return `First to ${target}, win by 2, cap ${cap}`;
+}
+
+/* ── RENDER ROUNDS ── */
+async function startR1(){
+  document.getElementById('se').textContent = '';
+  if(players.length<4){ document.getElementById('se').textContent='Add at least 4 players.'; return; }
+  r1pools = makePools(shuffle(players), MAXPOOL);
+  r1g = buildStore('r1', r1pools);
+  // Save to Firebase
+  try {
+    await setDoc(doc(db, 'tournaments', tournamentId), {
+      players, r1pools, createdAt: new Date()
+    }, { merge: true });
+  } catch(e) { console.error('Save error:', e); }
+  renderRound('r1', r1pools, r1g, 'r1p', 'r1i', null);
+  document.getElementById('tab1').disabled = false;
+  goTab(1);
+}
+
+function renderRound(pfx, pools, store, cid, iid, seeds){
+  const labs = ['A','B','C','D','E','F','G','H'];
+  const parts = [...new Set(pools.map(p=>p.length))].map(sz => {const r=poolRules(sz);return `${sz}-player: to ${r.target}, cap ${r.cap}`;}).join(' · ');
+  document.getElementById(iid).textContent = `${pools.length} pool${pools.length>1?'s':''} · ${players.length} players · ${parts} · win by 2`;
+  let html = '<div class="pgrid">';
+  pools.forEach((pool,pi) => {
+    const games = makeGames(pool);
+    const rules = poolRules(pool.length);
+    const mems = pool.map(p => seeds?`${p} <span class="sb">#${seeds[p]}</span>`:p).join(' · ');
+    html += `<div class="card">
+      <div class="pool-hdr">
+        <span class="pool-label">Pool ${labs[pi]}</span>
+        <span class="pool-badge">${pool.length} players · to ${rules.target}, cap ${rules.cap}</span>
+      </div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px;">${mems}</div>
+      <div class="divider"></div>`;
+    games.forEach((g,gi) => {
+      const k = gkey(pfx, g.t1, g.t2);
+      const sv = store[k]||{};
+      const stateClass = sv.saved?'done':sv.live?'live':'';
+      const stateLabel = sv.saved?'<span class="game-state gs-done">✓ done</span>':sv.live?'<span class="game-state gs-live">● live</span>':'<span class="game-state gs-waiting">waiting</span>';
+      const scoreStr = sv.saved||sv.live?`${sv.s1} – ${sv.s2}`:'–';
+      html += `<div class="gc ${stateClass}" id="gc_${k}">
+        <div class="glabel">
+          <span style="font-weight:500;">Game ${gi+1}${g.sit?` <span class="sit">· ${g.sit} sits out</span>`:''}</span>
+          ${stateLabel}
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="font-size:13px;font-weight:500;flex:1;">${g.t1[0]} &amp; ${g.t1[1]}</div>
+          <div style="font-size:15px;font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:60px;text-align:center;">${scoreStr}</div>
+          <div style="font-size:13px;font-weight:500;flex:1;text-align:right;">${g.t2[0]} &amp; ${g.t2[1]}</div>
+        </div>
+        ${!sv.saved?`<div style="margin-top:8px;display:flex;gap:6px;">
+          <button class="btn sm" style="flex:1;background:#f0883e;color:#fff;border-color:#f0883e;" onclick="openSitter('${pfx}','${k}',${rules.target},${rules.cap})">
+            ${g.sit?`📱 Open for ${g.sit}`:'📱 Open scorer'}
+          </button>
+        </div>`:`<div style="margin-top:6px;font-size:11px;color:#15803d;font-weight:500;">Final: ${g.t1.join(' &amp; ')} ${sv.s1} – ${sv.s2} ${g.t2.join(' &amp; ')}</div>`}
+      </div>`;
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  document.getElementById(cid).innerHTML = html;
+}
+
+/* ── SITTER ── */
+function openSitter(pfx,k,target,cap){
+  const store = pfx==='r1'?r1g:r2g;
+  const gd = store[k];
+  if(!gd) return;
+  sitter = {pfx,k,s1:gd.s1||0,s2:gd.s2||0,ptTarget:target,ptCap:cap};
+  gd.live = true;
+  document.getElementById('sitterLabel').textContent = `${gd.t1[0]} & ${gd.t1[1]}  vs  ${gd.t2[0]} & ${gd.t2[1]}${gd.sit?' · '+gd.sit+' is scoring':''}`;
+  document.getElementById('st1names').textContent = gd.t1.join(' & ');
+  document.getElementById('st2names').textContent = gd.t2.join(' & ');
+  document.getElementById('sitterCapNote').textContent = `First to ${target}, win by 2, cap ${cap}`;
+  updateSitterBoard();
+  document.getElementById('sitterOverlay').classList.add('active');
+}
+function closeSitter(){
+  document.getElementById('sitterOverlay').classList.remove('active');
+  const store = sitter.pfx==='r1'?r1g:r2g;
+  if(store[sitter.k]){ store[sitter.k].s1=sitter.s1; store[sitter.k].s2=sitter.s2; }
+}
+function sitterTap(team,delta){
+  if(team===1) sitter.s1 = Math.max(0, Math.min(sitter.ptCap, sitter.s1+delta));
+  else sitter.s2 = Math.max(0, Math.min(sitter.ptCap, sitter.s2+delta));
+  updateSitterBoard();
+}
+function resetSitter(){ sitter.s1=0; sitter.s2=0; updateSitterBoard(); }
+function updateSitterBoard(){
+  const {s1,s2,ptTarget,ptCap} = sitter;
+  document.getElementById('st1score').textContent = s1;
+  document.getElementById('st2score').textContent = s2;
+  const t1win = s1>s2, t2win = s2>s1;
+  document.getElementById('st1').classList.toggle('winning', t1win);
+  document.getElementById('st2').classList.toggle('winning', t2win);
+  document.getElementById('winByNote').textContent = winByNote(s1,s2,ptTarget,ptCap);
+  const valid = isValidFinal(s1,s2,ptTarget,ptCap);
+  document.getElementById('sitterSubmit').disabled = !valid;
+}
+
+async function submitSitter(){
+  const {pfx,k,s1,s2,ptTarget,ptCap} = sitter;
+  if(!isValidFinal(s1,s2,ptTarget,ptCap)) return;
+  const store = pfx==='r1'?r1g:r2g;
+  store[k] = {...store[k], s1, s2, saved:true, live:false};
+  // Save to Firebase
+  try {
+    await setDoc(doc(db, 'tournaments', tournamentId, 'scores', k), {
+      gameKey: k, round: pfx, s1, s2, submittedAt: new Date()
+    });
+  } catch(e) { console.error('Submit error:', e); }
+  closeSitter();
+  const cid = pfx==='r1'?'r1p':'r2p';
+  const iid = pfx==='r1'?'r1i':'r2i';
+  const seeds = pfx==='r2'?buildSeedMap():null;
+  renderRound(pfx, pfx==='r1'?r1pools:r2pools, store, cid, iid, seeds);
+}
+
+/* ── STATS ── */
+function calcStats(pools, store, pfx){
+  const labs = ['A','B','C','D','E','F','G','H'];
+  const s = {};
+  pools.flat().forEach(p => { s[p]={w:0,l:0,pf:0,pa:0,pool:''}; });
+  pools.forEach((pool,pi) => {
+    pool.forEach(p => s[p].pool = labs[pi]);
+    makeGames(pool).forEach(g => {
+      const k = gkey(pfx, g.t1, g.t2);
+      const gd = store[k];
+      if(!gd||!gd.saved) return;
+      const ap = (team,sc,ag,win) => team.forEach(p => {
+        s[p].pf+=sc; s[p].pa+=ag; if(win)s[p].w++;else s[p].l++;
+      });
+      if(gd.s1>gd.s2){ ap(gd.t1,gd.s1,gd.s2,true); ap(gd.t2,gd.s2,gd.s1,false); }
+      else if(gd.s2>gd.s1){ ap(gd.t2,gd.s2,gd.s1,true); ap(gd.t1,gd.s1,gd.s2,false); }
+      else{ ap(gd.t1,gd.s1,gd.s2,false); ap(gd.t2,gd.s2,gd.s1,false); }
+    });
+  });
+  return s;
+}
+function poolsAreUneven(pools){ return [...new Set(pools.map(p=>p.length))].length>1; }
+function rankPlayers(st,uneven){
+  return Object.entries(st).map(([n,s])=>({n,...s,diff:s.pf-s.pa}))
+    .sort((a,b) => {
+      if(uneven) return b.diff-a.diff;
+      if(a.w!==b.w) return b.w-a.w;
+      if(a.l!==b.l) return a.l-b.l;
+      return b.diff-a.diff;
+    });
+}
+function buildSeedMap(){
+  const st = calcStats(r1pools, r1g, 'r1');
+  const rk = rankPlayers(st, poolsAreUneven(r1pools));
+  const seeds = {}; rk.forEach((r,i) => seeds[r.n]=i+1); return seeds;
+}
+
+/* ── LOCK ROUNDS ── */
+async function lockR1(){
+  document.getElementById('r1e').textContent = '';
+  const st = calcStats(r1pools, r1g, 'r1');
+  const uneven = poolsAreUneven(r1pools);
+  const rk = rankPlayers(st, uneven);
+  renderStandings(rk, uneven, 'r1sc', 'Round 1 standings', true);
+  document.getElementById('tab2').disabled = false;
+  goTab(2);
+}
+async function startR2(){
+  const st = calcStats(r1pools, r1g, 'r1');
+  const uneven = poolsAreUneven(r1pools);
+  const rk = rankPlayers(st, uneven);
+  const seeds = {}; rk.forEach((r,i) => seeds[r.n]=i+1);
+  r2pools = makePools(rk.map(r=>r.n), MAXPOOL);
+  r2g = buildStore('r2', r2pools);
+  try {
+    await setDoc(doc(db, 'tournaments', tournamentId), { r2pools }, { merge:true });
+  } catch(e) { console.error('Save error:', e); }
+  renderRound('r2', r2pools, r2g, 'r2p', 'r2i', seeds);
+  document.getElementById('tab3').disabled = false;
+  goTab(3);
+}
+async function lockR2(){
+  document.getElementById('r2e').textContent = '';
+  const s1 = calcStats(r1pools, r1g, 'r1');
+  const s2 = calcStats(r2pools, r2g, 'r2');
+  const unevenFinal = poolsAreUneven(r1pools)||poolsAreUneven(r2pools);
+  const comb = {};
+  players.forEach(p => {
+    const a = s1[p]||{w:0,l:0,pf:0,pa:0,pool:''};
+    const b = s2[p]||{w:0,l:0,pf:0,pa:0,pool:''};
+    comb[p] = {w:a.w+b.w,l:a.l+b.l,pf:a.pf+b.pf,pa:a.pa+b.pa,r1p:a.pool,r2p:b.pool};
+  });
+  const rk = Object.entries(comb).map(([n,s])=>({n,...s,diff:s.pf-s.pa}))
+    .sort((a,b) => {
+      if(unevenFinal) return b.diff-a.diff;
+      if(a.w!==b.w) return b.w-a.w;
+      if(a.l!==b.l) return a.l-b.l;
+      return b.diff-a.diff;
+    });
+  renderStandings(rk, unevenFinal, 'sc', 'Final standings', false, s1, s2);
+  document.getElementById('tab4').disabled = false;
+  goTab(4);
+}
+
+/* ── STANDINGS ── */
+function renderStandings(rk, uneven, cid, title, isR1Only, s1, s2){
+  const rankNote = uneven?'Pools have different sizes — ranked by point differential only':'Ranked: wins → losses → point differential';
+  const roundNote = isR1Only?'(Round 1)':'(both rounds combined)';
+  let h = `<div class="card">
+    <div class="card-title">${title}</div>
+    <div style="font-size:12px;color:#888;margin-bottom:1rem;">${rankNote} ${roundNote}</div>
+    <table><thead><tr>
+      <th>#</th><th>Player</th>
+      ${!uneven?'<th>W</th><th>L</th>':''}
+      <th>Diff</th><th>Pts for</th><th>Pts against</th>
+      ${isR1Only?'<th>Pool</th>':'<th>R1</th><th>R2</th>'}
+    </tr></thead><tbody>`;
+  rk.forEach((r,i) => {
+    const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'gr';
+    const pl = i===0?'1st':i===1?'2nd':i===2?'3rd':`${i+1}`;
+    const ds = r.diff>0?`+${r.diff}`:String(r.diff);
+    const dc = r.diff>0?'#16a34a':r.diff<0?'#dc2626':'#888';
+    h += `<tr>
+      <td><span class="${cls}">${pl}</span></td>
+      <td style="font-weight:${i<3?600:400}">${r.n}</td>
+      ${!uneven?`<td><span class="bw">${r.w}W</span></td><td><span class="bl">${r.l}L</span></td>`:''}
+      <td style="font-weight:600;color:${dc}">${ds}</td>
+      <td>${r.pf}</td><td>${r.pa}</td>
+      ${isR1Only?`<td><span class="pn">Pool ${r.pool||'—'}</span></td>`:`<td><span class="pn">Pool ${r.r1p||'—'}</span></td><td><span class="pn">Pool ${r.r2p||'—'}</span></td>`}
+    </tr>`;
+  });
+  h += `</tbody></table></div>`;
+  if(!isR1Only){
+    const tot = Object.values({...r1g,...r2g}).filter(g=>g.saved).length;
+    h += `<div class="card"><div class="stat-row">
+      <div><div class="stat-label">Players</div><div class="stat-val">${rk.length}</div></div>
+      <div><div class="stat-label">Games played</div><div class="stat-val">${tot}</div></div>
+      <div><div class="stat-label">Champion</div><div class="stat-val">🏆 ${rk[0].n}</div></div>
+    </div></div>`;
+  }
+  document.getElementById(cid).innerHTML = h;
+}
+
+// Expose global functions for inline onclick
+window.goTab = goTab;
+window.setOrgMode = setOrgMode;
+window.setSitterMode = setSitterMode;
+window.joinTournament = joinTournament;
+window.addP = addP;
+window.delP = delP;
+window.startR1 = startR1;
+window.openSitter = openSitter;
+window.closeSitter = closeSitter;
+window.sitterTap = sitterTap;
+window.resetSitter = resetSitter;
+window.submitSitter = submitSitter;
+window.lockR1 = lockR1;
+window.startR2 = startR2;
+window.lockR2 = lockR2;
+})();
+</script>
+</body>
+</html>
