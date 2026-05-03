@@ -23,6 +23,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn.primary{background:#1a56db;color:#fff;border-color:#1a56db;}
 .btn.primary:hover{background:#1e40af;}
 .btn.sm{padding:6px 12px;font-size:12px;}
+.btn.primary.sm{padding:8px 16px;}
 input[type="text"],input[type="number"]{height:36px;padding:0 10px;font-size:13px;border:1px solid #d5d4d0;border-radius:8px;background:#faf9f7;outline:none;}
 input:focus{border-color:#999;background:#fff;}
 .ptag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:#f0efe9;border:1px solid #e0dfd9;font-size:13px;margin:3px;}
@@ -104,9 +105,12 @@ tbody tr:hover{background:#fdfcfa;}
 <!-- Current -->
 <div id="tabCurrent">
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
       <div class="card-title">Live Tournaments</div>
-      <button class="btn primary btn-sm" onclick="showCreateTour()">+ Create Tournament</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn primary sm" onclick="showCreateTour()">+ Create</button>
+        <button class="btn sm" onclick="showSitterJoinPage()">Join with ID</button>
+      </div>
     </div>
   </div>
   <div id="currentTours"></div>
@@ -151,6 +155,24 @@ tbody tr:hover{background:#fdfcfa;}
         <button class="btn primary" onclick="createTournament()">Create &amp; Start Tournament</button>
       </div>
       <div class="err" id="createErr"></div>
+    </div>
+  </div>
+
+  <!-- SITTER JOIN PAGE -->
+
+  <div class="sec" id="secSitterJoin">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h2 style="font-size:20px;font-weight:600;">Join Tournament</h2>
+      <button class="btn" onclick="backHome()">← Back</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Enter Tournament ID</div>
+      <p style="font-size:13px;color:#666;margin-bottom:12px;">Ask your organizer for the tournament ID or click a tournament from the home page.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input type="text" id="joinId" placeholder="e.g. ABC123" style="flex:1;font-family:monospace;font-size:16px;letter-spacing:2px;" onkeydown="if(event.key==='Enter')sitterJoinByID()"/>
+        <button class="btn primary" onclick="sitterJoinByID()">Join</button>
+      </div>
+      <div class="err" id="joinErr"></div>
     </div>
   </div>
 
@@ -351,6 +373,13 @@ tbody tr:hover{background:#fdfcfa;}
     renderP();
   }
 
+  function showSitterJoinPage(){
+    document.getElementById('secHome').classList.remove('active');
+    document.getElementById('secSitterJoin').classList.add('active');
+    document.getElementById('joinId').value = '';
+    document.getElementById('joinErr').textContent = '';
+  }
+
   function backHome(){
     document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
     document.getElementById('secHome').classList.add('active');
@@ -434,6 +463,13 @@ tbody tr:hover{background:#fdfcfa;}
       }
       listenToTournament();
     } catch(e) { alert('Error: '+e.message); }
+  }
+
+  async function sitterJoinByID(){
+    document.getElementById('joinErr').textContent = '';
+    const tid = document.getElementById('joinId').value.trim().toUpperCase();
+    if(!tid) { document.getElementById('joinErr').textContent = 'Enter tournament ID'; return; }
+    joinTournament(tid);
   }
 
   function listenToTournament(){
@@ -876,11 +912,13 @@ tbody tr:hover{background:#fdfcfa;}
   /* ── GLOBALS ── */
   window.showTab = showTab;
   window.showCreateTour = showCreateTour;
+  window.showSitterJoinPage = showSitterJoinPage;
   window.backHome = backHome;
   window.addP = addP;
   window.delP = delP;
   window.createTournament = createTournament;
   window.joinTournament = joinTournament;
+  window.sitterJoinByID = sitterJoinByID;
   window.viewTournamentResults = viewTournamentResults;
   window.finalizeR1 = finalizeR1;
   window.genR2Pools = genR2Pools;
