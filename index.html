@@ -298,21 +298,21 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   function genTourId() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
 
   /* ── ROLE SELECTION ── */
-  window.selectAdmin = () => {
+  window.selectAdmin = function() {
     role = 'admin';
     document.getElementById('secRoleSelect').classList.remove('active');
     document.getElementById('secAdminHome').classList.add('active');
     showAdminTab('active');
   };
 
-  window.selectUser = () => {
+  window.selectUser = function() {
     role = 'user';
     document.getElementById('secRoleSelect').classList.remove('active');
     document.getElementById('secUserHome').classList.add('active');
     showUserTab('active');
   };
 
-  window.logout = () => {
+  window.logout = function() {
     role = null;
     tournamentId = null;
     players = [];
@@ -325,7 +325,7 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   };
 
   /* ── ADMIN: HOME ── */
-  window.showAdminTab = (which) => {
+  window.showAdminTab = function(which) {
     if(which==='active') {
       document.getElementById('adminActive').style.display='block';
       document.getElementById('adminPast').style.display='none';
@@ -394,7 +394,7 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   };
 
   /* ── USER: HOME ── */
-  window.showUserTab = (which) => {
+  window.showUserTab = function(which) {
     if(which==='active') {
       document.getElementById('userActive').style.display='block';
       document.getElementById('userPast').style.display='none';
@@ -491,13 +491,223 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   }
 
   /* ── PLAYER MANAGEMENT ── */
-  window.addP = () => {
+  window.showAdminCreate = function() {
+    document.getElementById('secAdminHome').classList.remove('active');
+    document.getElementById('secAdminCreate').classList.add('active');
+    players = [];
+    renderP();
+  };
+
+  window.backAdminHome = function() {
+    document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+    document.getElementById('secAdminHome').classList.add('active');
+    showAdminTab('active');
+  };
+
+  window.backUserHome = function() {
+    document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+    document.getElementById('secUserHome').classList.add('active');
+    showUserTab('active');
+  };
+
+  window.addP = function() {
     const el = document.getElementById('pi');
     const name = el.value.trim();
     if(!name || players.find(p => p.toLowerCase() === name.toLowerCase())) { el.value=''; return; }
     players.push(name); el.value=''; renderP();
   };
-  window.delP = (i) => { players.splice(i,1); renderP(); };
+
+  window.delP = function(i) { players.splice(i,1); renderP(); };
+
+  window.createTournament = async function() {
+    document.getElementById('createErr').textContent = '';
+    if(players.length<4){ document.getElementById('createErr').textContent='Add at least 4 players.'; return; }
+    const name = document.getElementById('tourName').value.trim()||'Tournament';
+    const date = document.getElementById('tourDate').value.trim();
+    tournamentId = genTourId();
+    r1pools = makePools(shuffle(players), MAXPOOL);
+    r1g = buildStore('r1', r1pools);
+    try {
+      await setDoc(doc(db, 'tournaments', tournamentId), {
+        tournamentId, name, date, players, playerCount: players.length, r1poolsJson: JSON.stringify(r1pools), createdAt: new Date(), status: 'round1'
+      });
+    } catch(e) { 
+      document.getElementById('createErr').textContent = 'Error: ' + e.message; return;
+    }
+    adminOpenTour(tournamentId);
+  };
+
+  window.adminOpenTour = async function(tid) {
+    tournamentId = tid;
+    try {
+      const tourRef = doc(db, 'tournaments', tid);
+      const tourSnap = await getDoc(tourRef);
+      if(!tourSnap.exists()) { alert('Tournament not found'); return; }
+      const tdata = tourSnap.data();
+      players = tdata.players||[];
+      if(tdata.r1poolsJson) r1pools = JSON.parse(tdata.r1poolsJson);
+      if(tdata.r2poolsJson) r2pools = JSON.parse(tdata.r2poolsJson);
+      r1g = buildStore('r1', r1pools);
+      r2g = buildStore('r2', r2pools);
+      
+      if(tdata.status==='round1') {
+        showAdminR1();
+      } else if(tdata.status==='r1standings') {
+        showAdminR1Stand();
+      } else if(tdata.status==='round2') {
+        showAdminR2();
+      }
+      listenToScores();
+    } catch(e) { console.error(e); }
+  };
+
+  window.finalizeR1 = async function() {
+    const calcStats = (pools, store, pfx) => {
+      const s = {};
+      pools.flat().forEach(p => { s[p]={w:0,l:0,pf:0,pa:0}; });
+      pools.forEach((pool) => {
+        makeGames(pool).forEach(g => {
+          const k = gkey(pfx, g.t1, g.t2);
+          const gd = store[k];
+          if(!gd||!gd.saved) return;
+          const ap = (team,sc,ag,win) => team.forEach(p => {s[p].pf+=sc; s[p].pa+=ag; if(win)s[p].w++;else s[p].l++;});
+          if(gd.s1>gd.s2){ ap(gd.t1,gd.s1,gd.s2,true); ap(gd.t2,gd.s2,gd.s1,false); }
+          else if(gd.s2>gd.s1){ ap(gd.t2,gd.s2,gd.s1,true); ap(gd.t1,gd.s1,gd.s2,false); }
+        });
+      });
+      return s;
+    };
+    const st = calcStats(r1pools, r1g, 'r1');
+    const rk = Object.entries(st).map(([n,s])=>({n,...s,diff:s.pf-s.pa})).sort((a,b)=>b.w-a.w||a.l-b.l||b.diff-a.diff);
+    try { await updateDoc(doc(db, 'tournaments', tournamentId), { status: 'r1standings' }); } catch(e) { }
+    renderR1Standings(rk, 'r1sc');
+    showAdminR1Stand();
+  };
+
+  window.genR2Pools = async function() {
+    r2pools = makePools(players, MAXPOOL);
+    r2g = buildStore('r2', r2pools);
+    try { await setDoc(doc(db, 'tournaments', tournamentId), { r2poolsJson: JSON.stringify(r2pools), status: 'round2' }, { merge:true }); } catch(e) { }
+    showAdminR2();
+  };
+
+  window.finalizeR2 = async function() {
+    const calcStats = (pools, store, pfx) => {
+      const s = {};
+      pools.flat().forEach(p => { s[p]={w:0,l:0,pf:0,pa:0}; });
+      pools.forEach((pool) => {
+        makeGames(pool).forEach(g => {
+          const k = gkey(pfx, g.t1, g.t2);
+          const gd = store[k];
+          if(!gd||!gd.saved) return;
+          const ap = (team,sc,ag,win) => team.forEach(p => {s[p].pf+=sc; s[p].pa+=ag; if(win)s[p].w++;else s[p].l++;});
+          if(gd.s1>gd.s2){ ap(gd.t1,gd.s1,gd.s2,true); ap(gd.t2,gd.s2,gd.s1,false); }
+          else if(gd.s2>gd.s1){ ap(gd.t2,gd.s2,gd.s1,true); ap(gd.t1,gd.s1,gd.s2,false); }
+        });
+      });
+      return s;
+    };
+    const s1 = calcStats(r1pools, r1g, 'r1');
+    const s2 = calcStats(r2pools, r2g, 'r2');
+    const comb = {};
+    players.forEach(p => {
+      const a = s1[p]||{w:0,l:0,pf:0,pa:0};
+      const b = s2[p]||{w:0,l:0,pf:0,pa:0};
+      comb[p] = {w:a.w+b.w,l:a.l+b.l,pf:a.pf+b.pf,pa:a.pa+b.pa};
+    });
+    const rk = Object.entries(comb).map(([n,s])=>({n,...s,diff:s.pf-s.pa})).sort((a,b)=>b.w-a.w||a.l-b.l||b.diff-a.diff);
+    try { await setDoc(doc(db, 'tournaments', tournamentId), { status: 'final', champion: rk[0].n, finalStandingsJson: JSON.stringify(rk) }, { merge:true }); } catch(e) { }
+    renderFinalStandings(rk, 'finalsc');
+    document.getElementById('secAdminR2').classList.remove('active');
+    document.getElementById('secAdminFinal').classList.add('active');
+  };
+
+  window.userJoinTour = async function(tid) {
+    tournamentId = tid;
+    try {
+      const tourRef = doc(db, 'tournaments', tid);
+      const tourSnap = await getDoc(tourRef);
+      if(!tourSnap.exists()) { alert('Tournament not found'); return; }
+      const tdata = tourSnap.data();
+      players = tdata.players||[];
+      if(tdata.r1poolsJson) r1pools = JSON.parse(tdata.r1poolsJson);
+      if(tdata.r2poolsJson) r2pools = JSON.parse(tdata.r2poolsJson);
+      r1g = buildStore('r1', r1pools);
+      r2g = buildStore('r2', r2pools);
+      
+      if(tdata.status==='round1') {
+        showUserR1();
+      } else if(tdata.status==='r1standings') {
+        showUserR1();
+      } else if(tdata.status==='round2') {
+        showUserR2();
+      } else if(tdata.status==='final') {
+        showUserFinal();
+      }
+      listenToScores();
+    } catch(e) { console.error(e); }
+  };
+
+  window.userViewResults = async function(tid) {
+    try {
+      const tourRef = doc(db, 'tournaments', tid);
+      const snap = await getDoc(tourRef);
+      if(!snap.exists()) return;
+      const data = snap.data();
+      let html = `<div class="card"><div class="card-title">${data.name}</div><div style="color:#666;margin-bottom:12px;">${data.date}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;"><div><strong>Champion:</strong> 🏆 ${data.champion}</div><div><strong>Players:</strong> ${data.playerCount}</div></div></div>`;
+      html += `<div class="card"><div class="card-title">Final Standings</div><table><thead><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>`;
+      if(data.finalStandingsJson) {
+        const standings = JSON.parse(data.finalStandingsJson);
+        standings.forEach((r,i) => {
+          const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+          const pl = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+          html += `<tr><td><span class="${cls}">${pl}</span></td><td style="font-weight:600;">${r.n}</td><td>${r.w}W</td><td>${r.l}L</td><td>${r.diff>0?'+':'}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+        });
+      }
+      html += `</tbody></table></div>`;
+      document.getElementById('userFinalsc').innerHTML = html;
+      document.getElementById('secUserHome').classList.remove('active');
+      document.getElementById('secUserFinal').classList.add('active');
+    } catch(e) { console.error(e); }
+  };
+
+  window.openScoring = function(pfx, k, target, cap) {
+    const store = pfx==='r1'?r1g:r2g;
+    const gd = store[k];
+    if(!gd) return;
+    sitter = {pfx, k, s1:gd.s1||0, s2:gd.s2||0, ptTarget:target, ptCap:cap};
+    document.getElementById('gameLabel').textContent = `${gd.t1[0]} & ${gd.t1[1]} vs ${gd.t2[0]} & ${gd.t2[1]}`;
+    document.getElementById('st1names').textContent = gd.t1.join(' & ');
+    document.getElementById('st2names').textContent = gd.t2.join(' & ');
+    document.getElementById('capNote').textContent = `First to ${target}, win by 2, cap ${cap}`;
+    updateBoard();
+    document.getElementById('scoringOverlay').classList.add('active');
+  };
+
+  window.closeSitter = function() {
+    document.getElementById('scoringOverlay').classList.remove('active');
+  };
+
+  window.sitterTap = function(team, delta) {
+    if(team===1) sitter.s1 = Math.max(0, Math.min(sitter.ptCap, sitter.s1+delta));
+    else sitter.s2 = Math.max(0, Math.min(sitter.ptCap, sitter.s2+delta));
+    updateBoard();
+  };
+
+  window.submitScore = async function() {
+    const {pfx, k, s1, s2} = sitter;
+    if(!isValidFinal(s1, s2, sitter.ptTarget, sitter.ptCap)) return;
+    const store = pfx==='r1'?r1g:r2g;
+    store[k] = {...store[k], s1, s2, saved:true};
+    try {
+      await setDoc(doc(db, 'tournaments', tournamentId, 'scores', k), {
+        gameKey: k, round: pfx, s1, s2, submittedAt: new Date()
+      });
+    } catch(e) { console.error(e); }
+    closeSitter();
+    if(pfx==='r1') showUserR1();
+    else showUserR2();
+  };
   function renderP(){
     const el = document.getElementById('plist');
     el.innerHTML = players.length
