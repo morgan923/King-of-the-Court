@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -106,6 +107,7 @@ tbody tr:hover{background:#fdfcfa;}
   </div>
 
   <!-- SETUP -->
+
   <div class="sec active" id="sec0">
     <div class="card">
       <div class="card-title">Tournament setup</div>
@@ -153,6 +155,7 @@ tbody tr:hover{background:#fdfcfa;}
   </div>
 
   <!-- ROUND 1 -->
+
   <div class="sec" id="sec1">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
       <div class="info-box" id="r1i" style="margin-bottom:0;flex:1;min-width:300px;"></div>
@@ -164,12 +167,14 @@ tbody tr:hover{background:#fdfcfa;}
   </div>
 
   <!-- R1 STANDINGS -->
+
   <div class="sec" id="sec2">
     <div id="r1sc"></div>
     <div class="actions" id="orgActions2"><button class="btn primary" onclick="startR2()">Generate Round 2 pools →</button></div>
   </div>
 
   <!-- ROUND 2 -->
+
   <div class="sec" id="sec3">
     <div class="info-box" id="r2i"></div>
     <div id="r2p"></div>
@@ -178,10 +183,12 @@ tbody tr:hover{background:#fdfcfa;}
   </div>
 
   <!-- FINAL STANDINGS -->
+
   <div class="sec" id="sec4"><div id="sc"></div></div>
 </div>
 
 <!-- SITTER OVERLAY -->
+
 <div class="sitter-overlay" id="sitterOverlay">
   <div class="sitter-inner">
     <div class="sitter-header">
@@ -293,14 +300,18 @@ async function joinTournament(){
   const tid = document.getElementById('joinTourId').value.trim().toUpperCase();
   document.getElementById('joinErr').textContent = '';
   if(!tid) { document.getElementById('joinErr').textContent = 'Enter tournament ID.'; return; }
+  if(tid.length !== 6) { document.getElementById('joinErr').textContent = 'Tournament ID should be 6 characters.'; return; }
   try {
-    const tourRef = doc(db, 'tournaments', tid);
-    const tourSnap = await getDoc(tourRef);
-    if(!tourSnap.exists()) { document.getElementById('joinErr').textContent = 'Tournament not found.'; return; }
     tournamentId = tid;
     isOrganizer = false;
-    // Listen to tournament updates and render rounds as they become available
+    document.getElementById('joinErr').textContent = 'Connecting to tournament...';
+    // Listen to tournament - will show error if organizer hasn't created it yet
     listenToTournament();
+    // Show that we're listening
+    document.getElementById('joinErr').textContent = '';
+    document.getElementById('sitterSetup').style.display = 'none';
+    document.getElementById('sec1').style.display = 'block';
+    document.getElementById('sec1').innerHTML = `<div class="card"><div style="text-align:center;padding:2rem;"><p style="font-size:14px;color:#888;margin-bottom:12px;">Waiting for organizer to start the tournament...</p><p style="font-size:12px;color:#aaa;">Tournament ID: <strong>${tid}</strong></p></div></div>`;
   } catch(e) {
     document.getElementById('joinErr').textContent = 'Error: ' + e.message;
   }
@@ -441,12 +452,20 @@ async function startR1(){
   if(players.length<4){ document.getElementById('se').textContent='Add at least 4 players.'; return; }
   r1pools = makePools(shuffle(players), MAXPOOL);
   r1g = buildStore('r1', r1pools);
-  // Save to Firebase
+  // Save tournament to Firebase FIRST
   try {
     await setDoc(doc(db, 'tournaments', tournamentId), {
-      players, r1pools, createdAt: new Date()
-    }, { merge: true });
-  } catch(e) { console.error('Save error:', e); }
+      tournamentId: tournamentId,
+      players: players,
+      r1pools: r1pools,
+      createdAt: new Date(),
+      status: 'round1'
+    });
+  } catch(e) { 
+    console.error('Error creating tournament:', e);
+    document.getElementById('se').textContent = 'Error creating tournament: ' + e.message;
+    return;
+  }
   renderRound('r1', r1pools, r1g, 'r1p', 'r1i', null);
   document.getElementById('tab1').disabled = false;
   goTab(1);
@@ -694,5 +713,6 @@ window.lockR2 = lockR2;
 window.copyTourUrl = copyTourUrl;
 })();
 </script>
+
 </body>
 </html>
