@@ -326,6 +326,7 @@ tbody tr:hover{background:#fdfcfa;}
     if(players.length<4){ document.getElementById('se').textContent='Add at least 4 players.'; return; }
     isOrganizer = true;
     tournamentId = genTourId();
+    localStorage.setItem('orgTournamentId', tournamentId);
     r1pools = makePools(shuffle(players), MAXPOOL);
     r1g = buildStore('r1', r1pools);
     try {
@@ -444,6 +445,9 @@ tbody tr:hover{background:#fdfcfa;}
     const st = calcStats(r1pools, r1g, 'r1');
     const uneven = poolsAreUneven(r1pools);
     const rk = rankPlayers(st, uneven);
+    try {
+      await updateDoc(doc(db, 'tournaments', tournamentId), { status: 'r1standings' });
+    } catch(e) { console.error(e); }
     renderR1Standings(rk, uneven, 'r1sc');
     document.getElementById('secOrgR1').classList.remove('active');
     document.getElementById('secOrgR1Stand').classList.add('active');
@@ -457,7 +461,7 @@ tbody tr:hover{background:#fdfcfa;}
     r2pools = makePools(rk.map(r=>r.n), MAXPOOL);
     r2g = buildStore('r2', r2pools);
     try {
-      await setDoc(doc(db, 'tournaments', tournamentId), { r2poolsJson: JSON.stringify(r2pools) }, { merge:true });
+      await setDoc(doc(db, 'tournaments', tournamentId), { r2poolsJson: JSON.stringify(r2pools), status: 'round2' }, { merge:true });
     } catch(e) { console.error(e); }
     renderOrgR2();
     document.getElementById('secOrgR1Stand').classList.remove('active');
@@ -560,6 +564,9 @@ tbody tr:hover{background:#fdfcfa;}
         if(a.l!==b.l) return a.l-b.l;
         return b.diff-a.diff;
       });
+    try {
+      await updateDoc(doc(db, 'tournaments', tournamentId), { status: 'final' });
+    } catch(e) { console.error(e); }
     renderFinalStandings(rk, unevenFinal, 'finalsc');
     document.getElementById('secOrgR2').classList.remove('active');
     document.getElementById('secOrgFinal').classList.add('active');
@@ -676,12 +683,13 @@ tbody tr:hover{background:#fdfcfa;}
       const rules = poolRules(pool.length);
       html += `<div class="card">
         <div class="pool-label">Your Pool (${pool.length} players)</div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px;">${pool.join(' · ')}</div>
         <div class="divider"></div>`;
       games.forEach((g,gi) => {
         const k = gkey('r2', g.t1, g.t2);
         const sv = r2g[k]||{};
         const scoreStr = sv.saved||sv.live?`${sv.s1} – ${sv.s2}`:'–';
-        html += `<div class="gc ${sv.saved?'done':''}" onclick="isSitter && openSitter('r2','${k}',${rules.target},${rules.cap})" style="cursor:pointer;">
+        html += `<div class="gc ${sv.saved?'done':''}" id="gc_${k}" style="cursor:${sv.saved?'default':'pointer'};user-select:none;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <div style="font-size:13px;font-weight:500;flex:1;">${g.t1[0]} &amp; ${g.t1[1]}</div>
             <div style="font-size:15px;font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:60px;text-align:center;">${scoreStr}</div>
@@ -692,6 +700,18 @@ tbody tr:hover{background:#fdfcfa;}
       html += '</div>';
     });
     document.getElementById('sitterPoolContent2').innerHTML = html;
+    // Attach click handlers AFTER rendering
+    r2pools.forEach((pool,pi) => {
+      const games = makeGames(pool);
+      const rules = poolRules(pool.length);
+      games.forEach((g,gi) => {
+        const k = gkey('r2', g.t1, g.t2);
+        const el = document.getElementById(`gc_${k}`);
+        if(el && !r2g[k]?.saved) {
+          el.addEventListener('click', () => openSitter('r2', k, rules.target, rules.cap));
+        }
+      });
+    });
   }
 
   /* ── SITTER SCORING ── */
@@ -818,6 +838,84 @@ tbody tr:hover{background:#fdfcfa;}
     document.getElementById(cid).innerHTML = h;
   }
 
+  async function restoreOrganizerSession(tid){
+    isOrganizer = true;
+    tournamentId = tid;
+    try {
+      const tourRef = doc(db, 'tournaments', tid);
+      const tourSnap = await getDoc(tourRef);
+      if(!tourSnap.exists()) { localStorage.removeItem('orgTournamentId'); return; }
+      const tdata = tourSnap.data();
+      players = tdata.players||[];
+      if(tdata.r1poolsJson) r1pools = JSON.parse(tdata.r1poolsJson);
+      if(tdata.r2poolsJson) r2pools = JSON.parse(tdata.r2poolsJson);
+      r1g = buildStore('r1', r1pools);
+      r2g = buildStore('r2', r2pools);
+      
+      // Determine which screen to show based on status
+      if(tdata.status==='round1') {
+        showOrgR1();
+      } else if(tdata.status==='r1standings') {
+        const st = calcStats(r1pools, r1g, 'r1');
+        const uneven = poolsAreUneven(r1pools);
+        const rk = rankPlayers(st, uneven);
+        renderR1Standings(rk, uneven, 'r1sc');
+        document.getElementById('secSetup').classList.remove('active');
+        document.getElementById('secOrgR1Stand').classList.add('active');
+      } else if(tdata.status==='round2') {
+        renderOrgR2();
+        document.getElementById('secSetup').classList.remove('active');
+        document.getElementById('secOrgR2').classList.add('active');
+      } else if(tdata.status==='final') {
+        // Recalc from Firebase
+        const s1 = calcStats(r1pools, r1g, 'r1');
+        const s2 = calcStats(r2pools, r2g, 'r2');
+        const unevenFinal = poolsAreUneven(r1pools)||poolsAreUneven(r2pools);
+        const comb = {};
+        players.forEach(p => {
+          const a = s1[p]||{w:0,l:0,pf:0,pa:0,pool:''};
+          const b = s2[p]||{w:0,l:0,pf:0,pa:0,pool:''};
+          comb[p] = {w:a.w+b.w,l:a.l+b.l,pf:a.pf+b.pf,pa:a.pa+b.pa,r1p:a.pool,r2p:b.pool};
+        });
+        const rk = Object.entries(comb).map(([n,s])=>({n,...s,diff:s.pf-s.pa}))
+          .sort((a,b) => {
+            if(unevenFinal) return b.diff-a.diff;
+            if(a.w!==b.w) return b.w-a.w;
+            if(a.l!==b.l) return a.l-b.l;
+            return b.diff-a.diff;
+          });
+        renderFinalStandings(rk, unevenFinal, 'finalsc');
+        document.getElementById('secSetup').classList.remove('active');
+        document.getElementById('secOrgFinal').classList.add('active');
+      }
+      listenToAllScores();
+    } catch(e) { console.error(e); }
+  }
+
+  function listenToAllScores(){
+    const scoresRef = collection(db, 'tournaments', tournamentId, 'scores');
+    onSnapshot(scoresRef, (snap) => {
+      snap.forEach(doc => {
+        const data = doc.data();
+        if(data.round==='r1' && r1g[data.gameKey]) {
+          r1g[data.gameKey].s1 = data.s1;
+          r1g[data.gameKey].s2 = data.s2;
+          r1g[data.gameKey].saved = true;
+        }
+        if(data.round==='r2' && r2g[data.gameKey]) {
+          r2g[data.gameKey].s1 = data.s1;
+          r2g[data.gameKey].s2 = data.s2;
+          r2g[data.gameKey].saved = true;
+        }
+      });
+      // Update UI
+      const r1Info = document.getElementById('r1PoolsOrg');
+      if(r1Info) renderOrgR1();
+      const r2Info = document.getElementById('r2PoolsOrg');
+      if(r2Info) renderOrgR2();
+    });
+  }
+
   /* ── INIT ── */
   window.addP = addP;
   window.delP = delP;
@@ -831,8 +929,18 @@ tbody tr:hover{background:#fdfcfa;}
   window.finalizeR2 = finalizeR2;
   window.copyLink = (url) => { navigator.clipboard.writeText(url); alert('Link copied!'); };
 
-  // Auto-join if URL has tournament param
-  joinFromUrl();
+  // Check if organizer or sitter on page load
+  const params = new URLSearchParams(window.location.search);
+  const tourParam = params.get('tournament');
+  const savedOrgId = localStorage.getItem('orgTournamentId');
+  
+  if(tourParam) {
+    // Sitter joining via link
+    joinFromUrl();
+  } else if(savedOrgId) {
+    // Organizer refreshing — restore their tournament
+    restoreOrganizerSession(savedOrgId);
+  }
 })();
 </script>
 
