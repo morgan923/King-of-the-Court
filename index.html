@@ -631,12 +631,13 @@ tbody tr:hover{background:#fdfcfa;}
       const isMine = pool.some(p => true); // in real app, check if sitter is in this pool
       html += `<div class="card">
         <div class="pool-label">Your Pool (${pool.length} players)</div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px;">${pool.join(' · ')}</div>
         <div class="divider"></div>`;
       games.forEach((g,gi) => {
         const k = gkey('r1', g.t1, g.t2);
         const sv = r1g[k]||{};
         const scoreStr = sv.saved||sv.live?`${sv.s1} – ${sv.s2}`:'–';
-        html += `<div class="gc ${sv.saved?'done':''}" onclick="isSitter && openSitter('r1','${k}',${rules.target},${rules.cap})" style="cursor:pointer;">
+        html += `<div class="gc ${sv.saved?'done':''}" id="gc_${k}" style="cursor:${sv.saved?'default':'pointer'};user-select:none;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <div style="font-size:13px;font-weight:500;flex:1;">${g.t1[0]} &amp; ${g.t1[1]}</div>
             <div style="font-size:15px;font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:60px;text-align:center;">${scoreStr}</div>
@@ -647,6 +648,18 @@ tbody tr:hover{background:#fdfcfa;}
       html += '</div>';
     });
     document.getElementById('sitterPoolContent').innerHTML = html;
+    // Attach click handlers AFTER rendering
+    r1pools.forEach((pool,pi) => {
+      const games = makeGames(pool);
+      const rules = poolRules(pool.length);
+      games.forEach((g,gi) => {
+        const k = gkey('r1', g.t1, g.t2);
+        const el = document.getElementById(`gc_${k}`);
+        if(el && !r1g[k]?.saved) {
+          el.addEventListener('click', () => openSitter('r1', k, rules.target, rules.cap));
+        }
+      });
+    });
   }
 
   function showSitterR2(){
