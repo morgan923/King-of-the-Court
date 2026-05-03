@@ -4,137 +4,165 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>King of the Court</title>
+<title>Brevard Volleyball Club</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a;min-height:100vh;}
 .app{max-width:980px;margin:0 auto;padding:1.5rem 1rem;}
-.header{text-align:center;margin-bottom:2rem;}
-.header h1{font-size:28px;font-weight:600;letter-spacing:-0.5px;}
+.header{text-align:center;margin-bottom:2rem;border-bottom:2px solid #1a56db;padding-bottom:1.5rem;}
+.header h1{font-size:32px;font-weight:700;letter-spacing:-0.5px;color:#1a56db;}
 .header p{font-size:14px;color:#666;margin-top:4px;}
 .tabs{display:flex;gap:4px;margin-bottom:1.5rem;background:#e8e7e3;border-radius:10px;padding:4px;}
-.tab{flex:1;padding:8px 4px;font-size:12px;cursor:pointer;border:none;background:none;color:#666;border-radius:7px;transition:all 0.15s;}
-.tab.active{background:#fff;color:#1a1a1a;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
-.tab:disabled{opacity:0.35;cursor:not-allowed;}
+.tab{flex:1;padding:10px;font-size:13px;cursor:pointer;border:none;background:none;color:#666;border-radius:7px;transition:all 0.15s;font-weight:500;}
+.tab.active{background:#fff;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
 .sec{display:none;}.sec.active{display:block;}
 .card{background:#fff;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;border:1px solid #e5e4e0;}
 .card-title{font-size:14px;font-weight:600;margin-bottom:12px;}
-input[type="text"],input[type="number"]{height:36px;padding:0 10px;font-size:13px;border:1px solid #d5d4d0;border-radius:8px;background:#faf9f7;color:#1a1a1a;outline:none;}
-input:focus{border-color:#999;background:#fff;}
-.btn{padding:8px 16px;font-size:13px;cursor:pointer;border:1px solid #d5d4d0;border-radius:8px;background:#fff;color:#1a1a1a;transition:all 0.12s;}
+.btn{padding:10px 18px;font-size:13px;cursor:pointer;border:1px solid #d5d4d0;border-radius:8px;background:#fff;color:#1a1a1a;transition:all 0.12s;font-weight:500;}
 .btn:hover{background:#f5f4f0;}
-.btn.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:500;}
-.btn.primary:hover{background:#333;}
-.btn.sm{padding:5px 11px;font-size:12px;}
+.btn.primary{background:#1a56db;color:#fff;border-color:#1a56db;}
+.btn.primary:hover{background:#1e40af;}
+.btn.sm{padding:6px 12px;font-size:12px;}
+input[type="text"],input[type="number"]{height:36px;padding:0 10px;font-size:13px;border:1px solid #d5d4d0;border-radius:8px;background:#faf9f7;outline:none;}
+input:focus{border-color:#999;background:#fff;}
 .ptag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:#f0efe9;border:1px solid #e0dfd9;font-size:13px;margin:3px;}
 .ptag .x{cursor:pointer;color:#999;font-size:11px;}
-.plist{display:flex;flex-wrap:wrap;min-height:44px;padding:8px;border:1px dashed #ccc;border-radius:8px;margin-top:8px;align-items:flex-start;align-content:flex-start;}
+.plist{display:flex;flex-wrap:wrap;min-height:44px;padding:8px;border:1px dashed #ccc;border-radius:8px;margin-top:8px;align-items:flex-start;}
 .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
 @media(max-width:640px){.pgrid{grid-template-columns:1fr;}}
+.tour-card{background:#fff;border:1px solid #e5e4e0;border-radius:12px;padding:1.25rem;margin-bottom:1rem;cursor:pointer;transition:all 0.15s;}
+.tour-card:hover{border-color:#1a56db;box-shadow:0 2px 8px rgba(26,86,219,0.1);}
+.tour-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.tour-title{font-size:16px;font-weight:600;color:#1a1a1a;}
+.tour-badge{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:600;}
+.badge-live{background:#dcfce7;color:#15803d;}
+.badge-complete{background:#f3f4f6;color:#6b7280;}
+.tour-info{font-size:12px;color:#666;line-height:1.5;}
+.tour-info span{display:block;margin-bottom:4px;}
 .pool-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .pool-label{font-size:13px;font-weight:600;}
 .pool-badge{font-size:11px;padding:2px 8px;border-radius:99px;background:#e8f0fe;color:#1a56db;}
 .divider{height:1px;background:#f0efe9;margin:10px 0;}
 .gc{border:1px solid #eeede9;border-radius:10px;padding:12px;margin-bottom:10px;}
 .gc.done{border-color:#16a34a;background:#f0fdf4;}
-.glabel{display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:8px;align-items:center;}
+.glabel{display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:8px;}
 .sit{font-style:italic;color:#f0883e;font-weight:500;}
-.game-state{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600;letter-spacing:0.3px;}
-.gs-done{background:#dcfce7;color:#15803d;}
 .sitter-overlay{display:none;position:fixed;inset:0;background:#fff;z-index:1000;overflow-y:auto;}
 .sitter-overlay.active{display:block;}
 .sitter-inner{max-width:480px;margin:0 auto;padding:1.5rem 1rem;}
 .sitter-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
 .sitter-header h2{font-size:20px;font-weight:700;}
 .close-sitter{font-size:22px;background:none;border:none;cursor:pointer;color:#666;padding:4px 8px;}
-.sitter-game-label{font-size:13px;color:#888;margin-bottom:1rem;}
-.sitter-board{display:grid;grid-template-columns:1fr auto 1fr;gap:0;border-radius:16px;overflow:hidden;border:1px solid #e5e4e0;margin-bottom:1.5rem;}
+.sitter-board{display:grid;grid-template-columns:1fr auto 1fr;border-radius:16px;overflow:hidden;border:1px solid #e5e4e0;margin-bottom:1.5rem;}
 .sitter-team{padding:1.5rem 1rem;text-align:center;background:#faf9f7;}
 .sitter-team.winning{background:#f0fdf4;}
-.sitter-team-names{font-size:14px;font-weight:700;margin-bottom:12px;line-height:1.4;}
+.sitter-team-names{font-size:14px;font-weight:700;margin-bottom:12px;}
 .sitter-score{font-size:72px;font-weight:800;line-height:1;margin-bottom:16px;}
 .sitter-team.winning .sitter-score{color:#15803d;}
 .sitter-mid{background:#f5f4f0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#aaa;font-weight:700;padding:0 4px;}
-.sitter-tap{width:100%;height:64px;font-size:28px;font-weight:800;border:none;border-radius:10px;cursor:pointer;margin-bottom:6px;transition:transform 0.08s;-webkit-tap-highlight-color:transparent;}
+.sitter-tap{width:100%;height:64px;font-size:28px;font-weight:800;border:none;border-radius:10px;cursor:pointer;margin-bottom:6px;transition:transform 0.08s;}
 .sitter-tap:active{transform:scale(0.93);}
 .sitter-tap.plus1{background:#1a1a1a;color:#fff;}
-.sitter-tap.minus1{background:#f3f4f6;color:#6b7280;font-size:18px;}
-.sitter-cap-note{font-size:12px;color:#888;text-align:center;margin-bottom:1rem;}
+.sitter-tap.minus1{background:#f3f4f6;color:#6b7280;}
 .sitter-submit{width:100%;padding:16px;font-size:16px;font-weight:700;background:#16a34a;color:#fff;border:none;border-radius:12px;cursor:pointer;margin-bottom:8px;}
 .sitter-submit:hover{background:#15803d;}
 .sitter-submit:disabled{opacity:0.4;cursor:not-allowed;}
-.win-by-note{font-size:12px;color:#888;text-align:center;margin-bottom:12px;min-height:18px;}
+.win-by-note{font-size:12px;color:#888;text-align:center;margin-bottom:12px;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead th{text-align:left;padding:8px 10px;font-weight:500;font-size:12px;color:#888;border-bottom:1px solid #f0efe9;background:#faf9f7;}
 tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
-tbody tr:last-child td{border-bottom:none;}
 tbody tr:hover{background:#fdfcfa;}
 .gold{color:#b45309;font-weight:600;}
 .silver{color:#6b7280;font-weight:600;}
 .bronze{color:#92400e;font-weight:600;}
-.gr{color:#9ca3af;}
-.bw{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;background:#dcfce7;color:#15803d;font-weight:500;}
-.bl{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;background:#fee2e2;color:#b91c1c;font-weight:500;}
-.pn{font-size:11px;padding:2px 7px;border-radius:99px;background:#f3f4f6;color:#6b7280;display:inline-block;}
+.info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:13px;color:#1e40af;margin-bottom:1rem;}
+.actions{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;}
+.err{margin-top:8px;font-size:13px;color:#dc2626;}
 .stat-row{display:flex;gap:2rem;flex-wrap:wrap;}
 .stat-label{font-size:12px;color:#888;margin-bottom:2px;}
 .stat-val{font-size:22px;font-weight:600;}
-.actions{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;}
-.err{margin-top:8px;font-size:13px;color:#dc2626;}
-.info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:13px;color:#1e40af;margin-bottom:1rem;}
-.pp{font-size:12px;color:#888;margin-top:6px;}
-.pool-complete{display:inline-block;background:#dcfce7;color:#15803d;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;}
-.pool-partial{display:inline-block;background:#fef3c7;color:#92400e;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+.pool-complete{display:inline-block;background:#dcfce7;color:#15803d;padding:3px 7px;border-radius:6px;font-size:11px;font-weight:600;}
+.pool-partial{display:inline-block;background:#fef3c7;color:#92400e;padding:3px 7px;border-radius:6px;font-size:11px;font-weight:600;}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
-    <h1>🏐 King of the Court</h1>
-    <p>Live 2v2 tournament scoring</p>
+    <h1>⛱️ Brevard Volleyball Club</h1>
+    <p>Live tournament scoring & results</p>
   </div>
 
-  <!-- ORGANIZER SETUP -->
+  <!-- HOME: Tournament List -->
 
-  <div class="sec active" id="secSetup">
+  <div class="sec active" id="secHome">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('current')">Current Tournaments</button>
+      <button class="tab" onclick="showTab('past')">Past Tournaments</button>
+    </div>
+
+```
+<!-- Current -->
+<div id="tabCurrent">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="card-title">Live Tournaments</div>
+      <button class="btn primary btn-sm" onclick="showCreateTour()">+ Create Tournament</button>
+    </div>
+  </div>
+  <div id="currentTours"></div>
+</div>
+
+<!-- Past -->
+<div id="tabPast" style="display:none;">
+  <div class="card">
+    <div class="card-title">Completed Tournaments</div>
+  </div>
+  <div id="pastTours"></div>
+</div>
+```
+
+  </div>
+
+  <!-- CREATE TOURNAMENT -->
+
+  <div class="sec" id="secCreate">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <h2 style="font-size:20px;font-weight:600;">Create Tournament</h2>
+      <button class="btn" onclick="backHome()">← Back</button>
+    </div>
     <div class="card">
-      <div class="card-title">Organizer Setup</div>
+      <div class="card-title">Tournament Details</div>
       <div style="margin-bottom:12px;">
-        <p style="font-size:13px;color:#444;margin-bottom:12px;">Point limits by pool size:</p>
-        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:12px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;background:#e8f0fe;color:#1a56db;">5 players</span>
-            <span style="font-size:13px;color:#444;">to <strong>15</strong>, cap <strong>21</strong>, win by 2</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;background:#fef3c7;color:#92400e;">4 players</span>
-            <span style="font-size:13px;color:#444;">to <strong>21</strong>, cap <strong>28</strong>, win by 2</span>
-          </div>
-        </div>
+        <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Tournament Name</label>
+        <input type="text" id="tourName" placeholder="e.g. Tuesday Night Doubles" style="width:100%;"/>
       </div>
-      <div class="card-title" style="margin-top:12px;">Add players</div>
-      <div style="display:flex;gap:8px;">
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Date/Time</label>
+        <input type="text" id="tourDate" placeholder="e.g. Tuesday 7pm" style="width:100%;"/>
+      </div>
+      <div class="card-title" style="margin-top:16px;">Add Players</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
         <input type="text" id="pi" placeholder="Player name..." style="flex:1;" onkeydown="if(event.key==='Enter')addP()"/>
         <button class="btn" onclick="addP()">Add</button>
       </div>
-      <div class="plist" id="plist"><span style="font-size:12px;color:#bbb;align-self:center;">No players yet</span></div>
+      <div class="plist" id="plist"></div>
       <div style="margin-top:8px;font-size:12px;color:#888;" id="pc">0 players</div>
-      <div class="pp" id="pp"></div>
-      <div class="actions"><button class="btn primary" onclick="startTournament()">Create tournament →</button></div>
-      <div class="err" id="se"></div>
+      <div class="actions">
+        <button class="btn primary" onclick="createTournament()">Create &amp; Start Tournament</button>
+      </div>
+      <div class="err" id="createErr"></div>
     </div>
   </div>
 
-  <!-- ORGANIZER ROUND 1 LIVE -->
+  <!-- ORGANIZER R1 -->
 
   <div class="sec" id="secOrgR1">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
       <div class="info-box" id="r1info" style="margin-bottom:0;flex:1;min-width:300px;"></div>
       <div id="tourIdBadge" style="flex-shrink:0;"></div>
     </div>
     <div id="r1PoolsOrg"></div>
-    <div class="actions" id="orgActions1"><button class="btn primary" onclick="finalizeR1()">All pools complete - Generate R1 standings →</button></div>
-    <div class="err" id="r1e"></div>
+    <div class="actions"><button class="btn primary" onclick="finalizeR1()">All pools complete - Generate R1 standings →</button></div>
   </div>
 
   <!-- ORGANIZER R1 STANDINGS -->
@@ -144,7 +172,7 @@ tbody tr:hover{background:#fdfcfa;}
     <div class="actions"><button class="btn primary" onclick="genR2Pools()">Generate Round 2 pools →</button></div>
   </div>
 
-  <!-- ORGANIZER ROUND 2 LIVE -->
+  <!-- ORGANIZER R2 -->
 
   <div class="sec" id="secOrgR2">
     <div class="info-box" id="r2info"></div>
@@ -152,13 +180,14 @@ tbody tr:hover{background:#fdfcfa;}
     <div class="actions"><button class="btn primary" onclick="finalizeR2()">All pools complete - Generate final standings →</button></div>
   </div>
 
-  <!-- ORGANIZER FINAL STANDINGS -->
+  <!-- ORGANIZER FINAL -->
 
   <div class="sec" id="secOrgFinal">
     <div id="finalsc"></div>
+    <div class="actions"><button class="btn primary" onclick="backHome()">← Back to home</button></div>
   </div>
 
-  <!-- SITTER ROUND 1 -->
+  <!-- SITTER R1 -->
 
   <div class="sec" id="secSitterR1">
     <div class="info-box" id="sitterR1info"></div>
@@ -171,21 +200,29 @@ tbody tr:hover{background:#fdfcfa;}
     <div id="sitterR1sc"></div>
   </div>
 
-  <!-- SITTER ROUND 2 -->
+  <!-- SITTER R2 -->
 
   <div class="sec" id="secSitterR2">
     <div class="info-box" id="sitterR2info"></div>
     <div id="sitterPoolContent2"></div>
   </div>
 
-  <!-- SITTER FINAL STANDINGS -->
+  <!-- SITTER FINAL -->
 
   <div class="sec" id="secSitterFinal">
     <div id="sitterFinalsc"></div>
+    <div class="actions"><button class="btn primary" onclick="backHome()">← Back to home</button></div>
+  </div>
+
+  <!-- TOURNAMENT VIEW (for browsing results) -->
+
+  <div class="sec" id="secTourResult">
+    <div style="margin-bottom:1rem;"><button class="btn" onclick="backHome()">← Back</button></div>
+    <div id="tourResultContent"></div>
   </div>
 </div>
 
-<!-- SITTER SCORING OVERLAY -->
+<!-- SITTER SCORING -->
 
 <div class="sitter-overlay" id="sitterOverlay">
   <div class="sitter-inner">
@@ -193,7 +230,7 @@ tbody tr:hover{background:#fdfcfa;}
       <h2>Live scoring</h2>
       <button class="close-sitter" onclick="closeSitter()">✕</button>
     </div>
-    <div class="sitter-game-label" id="sitterLabel"></div>
+    <div style="font-size:13px;color:#888;margin-bottom:1rem;" id="sitterLabel"></div>
     <div class="sitter-board">
       <div class="sitter-team" id="st1">
         <div class="sitter-team-names" id="st1names"></div>
@@ -210,7 +247,7 @@ tbody tr:hover{background:#fdfcfa;}
       </div>
     </div>
     <div class="win-by-note" id="winByNote"></div>
-    <div class="sitter-cap-note" id="sitterCapNote"></div>
+    <div style="font-size:12px;color:#888;text-align:center;margin-bottom:1rem;" id="sitterCapNote"></div>
     <button class="sitter-submit" id="sitterSubmit" onclick="submitSitter()">Submit final score</button>
   </div>
 </div>
@@ -218,7 +255,7 @@ tbody tr:hover{background:#fdfcfa;}
 <script type="module">
 (async () => {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js");
-  const { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc } = await import("https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js");
+  const { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js");
 
   const firebaseConfig = {
     apiKey: "AIzaSyBQAx2DK8mm7lyGTqaqhWYfTTTBc3DznUg",
@@ -239,13 +276,97 @@ tbody tr:hover{background:#fdfcfa;}
   let isOrganizer = false;
   let isSitter = false;
   let tournamentId = null;
-  let myPoolIdx = null;
   let players = [], r1pools = [], r2pools = [], r1g = {}, r2g = {};
   let sitter = { pfx:null, k:null, s1:0, s2:0, ptTarget:15, ptCap:21 };
 
   function genTourId() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
 
-  /* ── MODE ── */
+  /* ── HOME PAGE ── */
+  function showTab(which){
+    if(which==='current') {
+      document.getElementById('tabCurrent').style.display='block';
+      document.getElementById('tabPast').style.display='none';
+      document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===0));
+      loadCurrentTournaments();
+    } else {
+      document.getElementById('tabCurrent').style.display='none';
+      document.getElementById('tabPast').style.display='block';
+      document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===1));
+      loadPastTournaments();
+    }
+  }
+
+  async function loadCurrentTournaments(){
+    try {
+      const toursRef = collection(db, 'tournaments');
+      const q = query(toursRef, where('status', 'in', ['round1', 'r1standings', 'round2']));
+      const snap = await getDocs(q);
+      let html = '';
+      snap.forEach(doc => {
+        const data = doc.data();
+        const statusLabel = data.status==='round1'?'Round 1':(data.status==='r1standings'?'R1 Standings':'Round 2');
+        html += `<div class="tour-card" onclick="joinTournament('${doc.id}')">
+          <div class="tour-header">
+            <div class="tour-title">${data.name||'Tournament'}</div>
+            <span class="tour-badge badge-live">● ${statusLabel}</span>
+          </div>
+          <div class="tour-info">
+            <span>${data.playerCount||0} players</span>
+            <span>${data.date||''}</span>
+          </div>
+        </div>`;
+      });
+      if(!html) html = '<div class="card"><p style="color:#aaa;text-align:center;">No current tournaments</p></div>';
+      document.getElementById('currentTours').innerHTML = html;
+    } catch(e) { console.error(e); }
+  }
+
+  async function loadPastTournaments(){
+    try {
+      const toursRef = collection(db, 'tournaments');
+      const q = query(toursRef, where('status', '==', 'final'));
+      const snap = await getDocs(q);
+      let html = '';
+      snap.forEach(doc => {
+        const data = doc.data();
+        html += `<div class="tour-card" onclick="viewTournamentResults('${doc.id}')">
+          <div class="tour-header">
+            <div class="tour-title">${data.name||'Tournament'}</div>
+            <span class="tour-badge badge-complete">✓ Complete</span>
+          </div>
+          <div class="tour-info">
+            <span>🏆 Champion: ${data.champion||'—'}</span>
+            <span>${data.date||''}</span>
+          </div>
+        </div>`;
+      });
+      if(!html) html = '<div class="card"><p style="color:#aaa;text-align:center;">No past tournaments yet</p></div>';
+      document.getElementById('pastTours').innerHTML = html;
+    } catch(e) { console.error(e); }
+  }
+
+  function showCreateTour(){
+    document.getElementById('secHome').classList.remove('active');
+    document.getElementById('secCreate').classList.add('active');
+    renderP();
+  }
+
+  function backHome(){
+    document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+    document.getElementById('secHome').classList.add('active');
+    players = [];
+    r1pools = [];
+    r2pools = [];
+    r1g = {};
+    r2g = {};
+    isOrganizer = false;
+    isSitter = false;
+    tournamentId = null;
+    localStorage.removeItem('orgTournamentId');
+    showTab('current');
+  }
+
+  /* ── PLAYER MGMT ── */
   function addP(){
     const el = document.getElementById('pi');
     const name = el.value.trim();
@@ -257,38 +378,116 @@ tbody tr:hover{background:#fdfcfa;}
     const el = document.getElementById('plist');
     el.innerHTML = players.length
       ? players.map((p,i) => `<div class="ptag">${p}<span class="x" onclick="delP(${i})">✕</span></div>`).join('')
-      : '<span style="font-size:12px;color:#bbb;align-self:center;">No players yet</span>';
+      : '<span style="font-size:12px;color:#bbb;">No players yet</span>';
     document.getElementById('pc').textContent = `${players.length} player${players.length!==1?'s':''}`;
-    if(players.length>=4){
-      const pools = makePools(players, MAXPOOL);
-      const sizes = [...new Set(pools.map(p=>p.length))];
-      document.getElementById('pp').textContent = `→ ${pools.length} pool${pools.length>1?'s':''} of ${sizes.join(' or ')} players`;
-    } else { document.getElementById('pp').textContent = ''; }
+  }
+
+  /* ── TOURNAMENT CREATE ── */
+  async function createTournament(){
+    document.getElementById('createErr').textContent = '';
+    if(players.length<4){ document.getElementById('createErr').textContent='Add at least 4 players.'; return; }
+    const name = document.getElementById('tourName').value.trim()||'Tournament';
+    const date = document.getElementById('tourDate').value.trim();
+    isOrganizer = true;
+    tournamentId = genTourId();
+    localStorage.setItem('orgTournamentId', tournamentId);
+    
+    const shuffle = (a) => {const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;};
+    const makePools = (list, max) => {const n=Math.ceil(list.length/max);const pools=Array.from({length:n},()=>[]);list.forEach((p,i)=>pools[i%n].push(p));return pools;};
+    
+    r1pools = makePools(shuffle(players), MAXPOOL);
+    r1g = buildStore('r1', r1pools);
+    
+    try {
+      await setDoc(doc(db, 'tournaments', tournamentId), {
+        tournamentId, name, date, players, playerCount: players.length, r1poolsJson: JSON.stringify(r1pools), createdAt: new Date(), status: 'round1'
+      });
+    } catch(e) { 
+      document.getElementById('createErr').textContent = 'Error: ' + e.message; return;
+    }
+    showOrgR1();
+  }
+
+  /* ── JOIN TOURNAMENT ── */
+  async function joinTournament(tid){
+    isSitter = true;
+    tournamentId = tid;
+    try {
+      const tourRef = doc(db, 'tournaments', tid);
+      const tourSnap = await getDoc(tourRef);
+      if(!tourSnap.exists()) { alert('Tournament not found'); return; }
+      const tdata = tourSnap.data();
+      players = tdata.players||[];
+      if(tdata.r1poolsJson) r1pools = JSON.parse(tdata.r1poolsJson);
+      if(tdata.r2poolsJson) r2pools = JSON.parse(tdata.r2poolsJson);
+      r1g = buildStore('r1', r1pools);
+      r2g = buildStore('r2', r2pools);
+      
+      if(tdata.status==='round1') {
+        showSitterR1();
+      } else if(tdata.status==='r1standings') {
+        showSitterR1Stand();
+      } else if(tdata.status==='round2') {
+        showSitterR2();
+      } else if(tdata.status==='final') {
+        showSitterFinal();
+      }
+      listenToTournament();
+    } catch(e) { alert('Error: '+e.message); }
+  }
+
+  function listenToTournament(){
+    const tourRef = doc(db, 'tournaments', tournamentId);
+    onSnapshot(tourRef, (snap) => {
+      if(!snap.exists()) return;
+      const data = snap.data();
+      if(data.r1poolsJson && !r1pools.length) r1pools = JSON.parse(data.r1poolsJson);
+      if(data.r2poolsJson && !r2pools.length) { r2pools = JSON.parse(data.r2poolsJson); r2g = buildStore('r2', r2pools); }
+    });
+    const scoresRef = collection(db, 'tournaments', tournamentId, 'scores');
+    onSnapshot(scoresRef, (snap) => {
+      snap.forEach(doc => {
+        const data = doc.data();
+        if(data.round==='r1' && r1g[data.gameKey]) { r1g[data.gameKey].s1=data.s1; r1g[data.gameKey].s2=data.s2; r1g[data.gameKey].saved=true; }
+        if(data.round==='r2' && r2g[data.gameKey]) { r2g[data.gameKey].s1=data.s1; r2g[data.gameKey].s2=data.s2; r2g[data.gameKey].saved=true; }
+      });
+      if(document.getElementById('sitterPoolContent').style.display!=='none') renderSitterR1();
+      if(document.getElementById('sitterPoolContent2').style.display!=='none') renderSitterR2();
+    });
+  }
+
+  /* ── VIEW RESULTS ── */
+  async function viewTournamentResults(tid){
+    document.getElementById('secHome').classList.remove('active');
+    document.getElementById('secTourResult').classList.add('active');
+    try {
+      const tourRef = doc(db, 'tournaments', tid);
+      const snap = await getDoc(tourRef);
+      if(!snap.exists()) return;
+      const data = snap.data();
+      let html = `<div class="card"><div class="card-title">${data.name}</div><div style="color:#666;margin-bottom:12px;">${data.date}</div>`;
+      html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;"><div><strong>Champion:</strong> 🏆 ${data.champion}</div><div><strong>Players:</strong> ${data.playerCount}</div></div></div>`;
+      html += `<div class="card"><div class="card-title">Final Standings</div><table><thead><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>`;
+      if(data.finalStandingsJson) {
+        const standings = JSON.parse(data.finalStandingsJson);
+        standings.forEach((r,i) => {
+          const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+          const pl = i===0?'1st':i===1?'2nd':i===2?'3rd':`${i+1}`;
+          html += `<tr><td><span class="${cls}">${pl}</span></td><td style="font-weight:600;">${r.n}</td><td>${r.w}</td><td>${r.l}</td><td>${r.diff>0?'+':'}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+        });
+      }
+      html += `</tbody></table></div>`;
+      document.getElementById('tourResultContent').innerHTML = html;
+    } catch(e) { console.error(e); }
   }
 
   /* ── UTILITIES ── */
   function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
-  function makePools(list, max){
-    const n = Math.ceil(list.length/max);
-    const pools = Array.from({length:n}, ()=>[]);
-    list.forEach((p,i) => pools[i%n].push(p));
-    return pools;
-  }
-
+  function makePools(list, max){const n=Math.ceil(list.length/max);const pools=Array.from({length:n},()=>[]);list.forEach((p,i)=>pools[i%n].push(p));return pools;}
   function makeGames(pool){
     const q = (i,j) => [pool[i], pool[j]];
-    if(pool.length===4) return [
-      {t1:q(0,1),t2:q(2,3),sit:null},
-      {t1:q(0,2),t2:q(1,3),sit:null},
-      {t1:q(0,3),t2:q(1,2),sit:null},
-    ];
-    if(pool.length===5) return [
-      {t1:q(0,1),t2:q(2,3),sit:pool[4]},
-      {t1:q(0,2),t2:q(1,4),sit:pool[3]},
-      {t1:q(0,3),t2:q(2,4),sit:pool[1]},
-      {t1:q(0,4),t2:q(1,3),sit:pool[2]},
-      {t1:q(1,2),t2:q(3,4),sit:pool[0]},
-    ];
+    if(pool.length===4) return [{t1:q(0,1),t2:q(2,3),sit:null},{t1:q(0,2),t2:q(1,3),sit:null},{t1:q(0,3),t2:q(1,2),sit:null}];
+    if(pool.length===5) return [{t1:q(0,1),t2:q(2,3),sit:pool[4]},{t1:q(0,2),t2:q(1,4),sit:pool[3]},{t1:q(0,3),t2:q(2,4),sit:pool[1]},{t1:q(0,4),t2:q(1,3),sit:pool[2]},{t1:q(1,2),t2:q(3,4),sit:pool[0]}];
     return [];
   }
   function gkey(pfx,t1,t2){ return pfx+'__'+[...t1,...t2].slice().sort().join('~'); }
@@ -300,100 +499,50 @@ tbody tr:hover{background:#fdfcfa;}
     }));
     return s;
   }
-
-  /* ── VALIDATION ── */
   function isValidFinal(s1,s2,target,cap){
     if(s1===s2) return false;
-    const winner = Math.max(s1,s2), loser = Math.min(s1,s2);
+    const winner = Math.max(s1,s2);
     if(winner>cap) return false;
     if(winner===cap) return true;
     if(winner<target) return false;
-    if(winner-loser<2) return false;
+    if(winner-Math.min(s1,s2)<2) return false;
     return true;
   }
   function winByNote(s1,s2,target,cap){
     if(s1===s2 && s1===0) return `First to ${target}, win by 2, cap ${cap}`;
-    const winner = Math.max(s1,s2), loser = Math.min(s1,s2);
-    if(winner===cap) return `Cap reached — ${s1>s2?'Team 1':'Team 2'} wins ${winner}–${loser}`;
-    if(winner>=target && winner-loser<2) return `Win by 2 required — keep playing`;
-    if(winner>=target && winner-loser>=2) return `Valid score — ready to submit`;
-    return `First to ${target}, win by 2, cap ${cap}`;
+    const winner = Math.max(s1,s2);
+    if(winner===cap) return `Cap reached`;
+    if(winner>=target && winner-Math.min(s1,s2)<2) return `Win by 2 required`;
+    return '';
   }
 
-  /* ── ORGANIZER START ── */
-  async function startTournament(){
-    document.getElementById('se').textContent = '';
-    if(players.length<4){ document.getElementById('se').textContent='Add at least 4 players.'; return; }
-    isOrganizer = true;
-    tournamentId = genTourId();
-    localStorage.setItem('orgTournamentId', tournamentId);
-    r1pools = makePools(shuffle(players), MAXPOOL);
-    r1g = buildStore('r1', r1pools);
-    try {
-      await setDoc(doc(db, 'tournaments', tournamentId), {
-        tournamentId, players, r1poolsJson: JSON.stringify(r1pools), createdAt: new Date(), status: 'round1'
-      });
-    } catch(e) { 
-      document.getElementById('se').textContent = 'Error: ' + e.message; return;
-    }
-    showOrgR1();
-  }
-
+  /* ── ORGANIZER R1 ── */
   function showOrgR1(){
-    document.getElementById('secSetup').classList.remove('active');
+    document.getElementById('secCreate').classList.remove('active');
     document.getElementById('secOrgR1').classList.add('active');
     renderOrgR1();
     renderTourIdBadge();
   }
-
+  
   function renderTourIdBadge(){
     const url = window.location.href.split('?')[0] + '?tournament=' + tournamentId;
-    document.getElementById('tourIdBadge').innerHTML = `
-      <div style="background:#1a56db;color:#fff;border-radius:10px;padding:12px;font-size:13px;max-width:280px;">
-        <div style="font-weight:600;margin-bottom:6px;">Share with sitters:</div>
-        <div style="background:rgba(255,255,255,0.2);border-radius:6px;padding:8px;margin-bottom:8px;font-family:monospace;font-size:12px;word-break:break-all;">
-          <strong>${tournamentId}</strong>
-        </div>
-        <button class="btn" style="width:100%;background:rgba(255,255,255,0.3);color:#fff;border:1px solid rgba(255,255,255,0.4);font-size:12px;" onclick="copyLink('${url}')">
-          Copy link
-        </button>
-      </div>
-    `;
+    document.getElementById('tourIdBadge').innerHTML = `<div style="background:#1a56db;color:#fff;border-radius:10px;padding:12px;max-width:280px;"><div style="font-weight:600;margin-bottom:6px;">Share with players:</div><div style="background:rgba(255,255,255,0.2);border-radius:6px;padding:8px;font-family:monospace;font-size:12px;word-break:break-all;margin-bottom:8px;"><strong>${tournamentId}</strong></div><button class="btn" style="width:100%;background:rgba(255,255,255,0.3);color:#fff;border:1px solid rgba(255,255,255,0.4);font-size:12px;" onclick="copyLink('${url}')">Copy link</button></div>`;
   }
 
   function renderOrgR1(){
     const labs = ['A','B','C','D','E','F','G','H'];
-    const parts = [...new Set(r1pools.map(p=>p.length))].map(sz => {const r=poolRules(sz);return `${sz}-player: to ${r.target}, cap ${r.cap}`;}).join(' · ');
-    document.getElementById('r1info').textContent = `${r1pools.length} pool${r1pools.length>1?'s':''} · ${players.length} players · ${parts} · win by 2`;
+    const parts = [...new Set(r1pools.map(p=>p.length))].map(sz => `${sz}p`).join(' + ');
+    document.getElementById('r1info').textContent = `${r1pools.length} pools · ${players.length} players · ${parts}`;
     let html = '<div class="pgrid">';
     r1pools.forEach((pool,pi) => {
       const games = makeGames(pool);
       const rules = poolRules(pool.length);
-      const mems = pool.join(' · ');
-      const complete = games.every(g => r1g[gkey('r1',g.t1,g.t2)]?.saved);
-      html += `<div class="card">
-        <div class="pool-hdr">
-          <span class="pool-label">Pool ${labs[pi]}</span>
-          <span class="pool-badge" style="display:flex;gap:6px;align-items:center;"><span>${pool.length} players</span><span class="${complete?'pool-complete':'pool-partial'}">${complete?'✓ Done':games.filter(g=>r1g[gkey('r1',g.t1,g.t2)]?.saved).length}/${games.length}</span></span>
-        </div>
-        <div style="font-size:12px;color:#888;margin-bottom:8px;">${mems}</div>
-        <div class="divider"></div>`;
+      html += `<div class="card"><div class="pool-hdr"><span class="pool-label">Pool ${labs[pi]}</span><span class="pool-badge">${pool.length}p · to ${rules.target}</span></div><div class="divider"></div>`;
       games.forEach((g,gi) => {
         const k = gkey('r1', g.t1, g.t2);
         const sv = r1g[k]||{};
-        const stateLabel = sv.saved?'<span class="game-state gs-done">✓ done</span>':'<span style="font-size:10px;color:#aaa;">waiting</span>';
-        const scoreStr = sv.saved||sv.live?`${sv.s1} – ${sv.s2}`:'–';
-        html += `<div class="gc ${sv.saved?'done':''}" id="gc_${k}">
-          <div class="glabel">
-            <span style="font-weight:500;">Game ${gi+1}${g.sit?` <span class="sit">· ${g.sit}</span>`:''}</span>
-            ${stateLabel}
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div style="font-size:13px;font-weight:500;flex:1;">${g.t1[0]} &amp; ${g.t1[1]}</div>
-            <div style="font-size:15px;font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:60px;text-align:center;">${scoreStr}</div>
-            <div style="font-size:13px;font-weight:500;flex:1;text-align:right;">${g.t2[0]} &amp; ${g.t2[1]}</div>
-          </div>
-        </div>`;
+        const scoreStr = sv.saved?`${sv.s1} – ${sv.s2}`:'–';
+        html += `<div class="gc ${sv.saved?'done':''}"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="flex:1;font-size:12px;font-weight:500;">${g.t1[0]} &amp; ${g.t1[1]}</div><div style="font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:50px;text-align:center;">${scoreStr}</div><div style="flex:1;text-align:right;font-size:12px;font-weight:500;">${g.t2[0]} &amp; ${g.t2[1]}</div></div></div>`;
       });
       html += '</div>';
     });
@@ -407,41 +556,53 @@ tbody tr:hover{background:#fdfcfa;}
     onSnapshot(scoresRef, (snap) => {
       snap.forEach(doc => {
         const data = doc.data();
-        if(data.round==='r1' && r1g[data.gameKey]) {
-          r1g[data.gameKey].s1 = data.s1;
-          r1g[data.gameKey].s2 = data.s2;
-          r1g[data.gameKey].saved = true;
-        }
+        if(data.round==='r1' && r1g[data.gameKey]) { r1g[data.gameKey].s1=data.s1; r1g[data.gameKey].s2=data.s2; r1g[data.gameKey].saved=true; }
       });
-      // Update UI
       const labs = ['A','B','C','D','E','F','G','H'];
       r1pools.forEach((pool,pi) => {
-        const games = makeGames(pool);
-        games.forEach((g,gi) => {
+        makeGames(pool).forEach((g,gi) => {
           const k = gkey('r1', g.t1, g.t2);
           const sv = r1g[k]||{};
-          const gc = document.getElementById(`gc_${k}`);
+          const gc = document.querySelector(`[data-gc="${k}"]`);
           if(!gc) return;
           const scoreStr = sv.saved?`${sv.s1} – ${sv.s2}`:'–';
-          const stateLabel = sv.saved?'<span class="game-state gs-done">✓ done</span>':'<span style="font-size:10px;color:#aaa;">waiting</span>';
           gc.className = `gc ${sv.saved?'done':''}`;
-          gc.innerHTML = `
-            <div class="glabel">
-              <span style="font-weight:500;">Game ${gi+1}${g.sit?` <span class="sit">· ${g.sit}</span>`:''}</span>
-              ${stateLabel}
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-              <div style="font-size:13px;font-weight:500;flex:1;">${g.t1[0]} &amp; ${g.t1[1]}</div>
-              <div style="font-size:15px;font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:60px;text-align:center;">${scoreStr}</div>
-              <div style="font-size:13px;font-weight:500;flex:1;text-align:right;">${g.t2[0]} &amp; ${g.t2[1]}</div>
-            </div>
-          `;
+          gc.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;"><div style="flex:1;font-size:12px;font-weight:500;">${g.t1[0]} &amp; ${g.t1[1]}</div><div style="font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:50px;text-align:center;">${scoreStr}</div><div style="flex:1;text-align:right;font-size:12px;font-weight:500;">${g.t2[0]} &amp; ${g.t2[1]}</div></div>`;
+          gc.setAttribute('data-gc', k);
         });
       });
     });
   }
 
   async function finalizeR1(){
+    const calcStats = (pools, store, pfx) => {
+      const labs = ['A','B','C','D','E','F','G','H'];
+      const s = {};
+      pools.flat().forEach(p => { s[p]={w:0,l:0,pf:0,pa:0,pool:''}; });
+      pools.forEach((pool,pi) => {
+        pool.forEach(p => s[p].pool = labs[pi]);
+        makeGames(pool).forEach(g => {
+          const k = gkey(pfx, g.t1, g.t2);
+          const gd = store[k];
+          if(!gd||!gd.saved) return;
+          const ap = (team,sc,ag,win) => team.forEach(p => {s[p].pf+=sc; s[p].pa+=ag; if(win)s[p].w++;else s[p].l++;});
+          if(gd.s1>gd.s2){ ap(gd.t1,gd.s1,gd.s2,true); ap(gd.t2,gd.s2,gd.s1,false); }
+          else if(gd.s2>gd.s1){ ap(gd.t2,gd.s2,gd.s1,true); ap(gd.t1,gd.s1,gd.s2,false); }
+          else{ ap(gd.t1,gd.s1,gd.s2,false); ap(gd.t2,gd.s2,gd.s1,false); }
+        });
+      });
+      return s;
+    };
+    const poolsAreUneven = (pools) => [...new Set(pools.map(p=>p.length))].length>1;
+    const rankPlayers = (st,uneven) => {
+      return Object.entries(st).map(([n,s])=>({n,...s,diff:s.pf-s.pa}))
+        .sort((a,b) => {
+          if(uneven) return b.diff-a.diff;
+          if(a.w!==b.w) return b.w-a.w;
+          if(a.l!==b.l) return a.l-b.l;
+          return b.diff-a.diff;
+        });
+    };
     const st = calcStats(r1pools, r1g, 'r1');
     const uneven = poolsAreUneven(r1pools);
     const rk = rankPlayers(st, uneven);
@@ -453,11 +614,51 @@ tbody tr:hover{background:#fdfcfa;}
     document.getElementById('secOrgR1Stand').classList.add('active');
   }
 
+  function renderR1Standings(rk, uneven, cid){
+    let h = `<div class="card"><div class="card-title">Round 1 Standings</div><table><thead><tr><th>#</th><th>Player</th>${!uneven?'<th>W</th><th>L</th>':''}<th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>`;
+    rk.forEach((r,i) => {
+      const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const pl = i===0?'1st':i===1?'2nd':i===2?'3rd':`${i+1}`;
+      const ds = r.diff>0?`+${r.diff}`:r.diff;
+      h += `<tr><td><span class="${cls}">${pl}</span></td><td style="font-weight:600;">${r.n}</td>${!uneven?`<td>${r.w}W</td><td>${r.l}L</td>`:''}
+      <td style="color:${r.diff>0?'#16a34a':r.diff<0?'#dc2626':'#888'};font-weight:600;">${ds}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+    });
+    h += `</tbody></table></div>`;
+    document.getElementById(cid).innerHTML = h;
+  }
+
   async function genR2Pools(){
+    const calcStats = (pools, store, pfx) => {
+      const labs = ['A','B','C','D','E','F','G','H'];
+      const s = {};
+      pools.flat().forEach(p => { s[p]={w:0,l:0,pf:0,pa:0,pool:''}; });
+      pools.forEach((pool,pi) => {
+        pool.forEach(p => s[p].pool = labs[pi]);
+        makeGames(pool).forEach(g => {
+          const k = gkey(pfx, g.t1, g.t2);
+          const gd = store[k];
+          if(!gd||!gd.saved) return;
+          const ap = (team,sc,ag,win) => team.forEach(p => {s[p].pf+=sc; s[p].pa+=ag; if(win)s[p].w++;else s[p].l++;});
+          if(gd.s1>gd.s2){ ap(gd.t1,gd.s1,gd.s2,true); ap(gd.t2,gd.s2,gd.s1,false); }
+          else if(gd.s2>gd.s1){ ap(gd.t2,gd.s2,gd.s1,true); ap(gd.t1,gd.s1,gd.s2,false); }
+          else{ ap(gd.t1,gd.s1,gd.s2,false); ap(gd.t2,gd.s2,gd.s1,false); }
+        });
+      });
+      return s;
+    };
+    const poolsAreUneven = (pools) => [...new Set(pools.map(p=>p.length))].length>1;
+    const rankPlayers = (st,uneven) => {
+      return Object.entries(st).map(([n,s])=>({n,...s,diff:s.pf-s.pa}))
+        .sort((a,b) => {
+          if(uneven) return b.diff-a.diff;
+          if(a.w!==b.w) return b.w-a.w;
+          if(a.l!==b.l) return a.l-b.l;
+          return b.diff-a.diff;
+        });
+    };
     const st = calcStats(r1pools, r1g, 'r1');
     const uneven = poolsAreUneven(r1pools);
     const rk = rankPlayers(st, uneven);
-    const seeds = {}; rk.forEach((r,i) => seeds[r.n]=i+1);
     r2pools = makePools(rk.map(r=>r.n), MAXPOOL);
     r2g = buildStore('r2', r2pools);
     try {
@@ -470,37 +671,17 @@ tbody tr:hover{background:#fdfcfa;}
 
   function renderOrgR2(){
     const labs = ['A','B','C','D','E','F','G','H'];
-    const parts = [...new Set(r2pools.map(p=>p.length))].map(sz => {const r=poolRules(sz);return `${sz}-player: to ${r.target}, cap ${r.cap}`;}).join(' · ');
-    document.getElementById('r2info').textContent = `Round 2 · ${r2pools.length} pool${r2pools.length>1?'s':''} · ${parts}`;
+    document.getElementById('r2info').textContent = `Round 2 · ${r2pools.length} pools`;
     let html = '<div class="pgrid">';
     r2pools.forEach((pool,pi) => {
       const games = makeGames(pool);
       const rules = poolRules(pool.length);
-      const mems = pool.join(' · ');
-      const complete = games.every(g => r2g[gkey('r2',g.t1,g.t2)]?.saved);
-      html += `<div class="card">
-        <div class="pool-hdr">
-          <span class="pool-label">Pool ${labs[pi]}</span>
-          <span class="pool-badge" style="display:flex;gap:6px;align-items:center;"><span>${pool.length} players</span><span class="${complete?'pool-complete':'pool-partial'}">${complete?'✓ Done':games.filter(g=>r2g[gkey('r2',g.t1,g.t2)]?.saved).length}/${games.length}</span></span>
-        </div>
-        <div style="font-size:12px;color:#888;margin-bottom:8px;">${mems}</div>
-        <div class="divider"></div>`;
+      html += `<div class="card"><div class="pool-hdr"><span class="pool-label">Pool ${labs[pi]}</span><span class="pool-badge">${pool.length}p</span></div><div class="divider"></div>`;
       games.forEach((g,gi) => {
         const k = gkey('r2', g.t1, g.t2);
         const sv = r2g[k]||{};
-        const stateLabel = sv.saved?'<span class="game-state gs-done">✓ done</span>':'<span style="font-size:10px;color:#aaa;">waiting</span>';
-        const scoreStr = sv.saved||sv.live?`${sv.s1} – ${sv.s2}`:'–';
-        html += `<div class="gc ${sv.saved?'done':''}" id="gc_${k}">
-          <div class="glabel">
-            <span style="font-weight:500;">Game ${gi+1}${g.sit?` <span class="sit">· ${g.sit}</span>`:''}</span>
-            ${stateLabel}
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div style="font-size:13px;font-weight:500;flex:1;">${g.t1[0]} &amp; ${g.t1[1]}</div>
-            <div style="font-size:15px;font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:60px;text-align:center;">${scoreStr}</div>
-            <div style="font-size:13px;font-weight:500;flex:1;text-align:right;">${g.t2[0]} &amp; ${g.t2[1]}</div>
-          </div>
-        </div>`;
+        const scoreStr = sv.saved?`${sv.s1} – ${sv.s2}`:'–';
+        html += `<div class="gc ${sv.saved?'done':''}"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="flex:1;font-size:12px;font-weight:500;">${g.t1[0]} &amp; ${g.t1[1]}</div><div style="font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:50px;text-align:center;">${scoreStr}</div><div style="flex:1;text-align:right;font-size:12px;font-weight:500;">${g.t2[0]} &amp; ${g.t2[1]}</div></div></div>`;
       });
       html += '</div>';
     });
@@ -514,207 +695,136 @@ tbody tr:hover{background:#fdfcfa;}
     onSnapshot(scoresRef, (snap) => {
       snap.forEach(doc => {
         const data = doc.data();
-        if(data.round==='r2' && r2g[data.gameKey]) {
-          r2g[data.gameKey].s1 = data.s1;
-          r2g[data.gameKey].s2 = data.s2;
-          r2g[data.gameKey].saved = true;
-        }
-      });
-      const labs = ['A','B','C','D','E','F','G','H'];
-      r2pools.forEach((pool,pi) => {
-        const games = makeGames(pool);
-        games.forEach((g,gi) => {
-          const k = gkey('r2', g.t1, g.t2);
-          const sv = r2g[k]||{};
-          const gc = document.getElementById(`gc_${k}`);
-          if(!gc) return;
-          const scoreStr = sv.saved?`${sv.s1} – ${sv.s2}`:'–';
-          const stateLabel = sv.saved?'<span class="game-state gs-done">✓ done</span>':'<span style="font-size:10px;color:#aaa;">waiting</span>';
-          gc.className = `gc ${sv.saved?'done':''}`;
-          gc.innerHTML = `
-            <div class="glabel">
-              <span style="font-weight:500;">Game ${gi+1}${g.sit?` <span class="sit">· ${g.sit}</span>`:''}</span>
-              ${stateLabel}
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-              <div style="font-size:13px;font-weight:500;flex:1;">${g.t1[0]} &amp; ${g.t1[1]}</div>
-              <div style="font-size:15px;font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:60px;text-align:center;">${scoreStr}</div>
-              <div style="font-size:13px;font-weight:500;flex:1;text-align:right;">${g.t2[0]} &amp; ${g.t2[1]}</div>
-            </div>
-          `;
-        });
+        if(data.round==='r2' && r2g[data.gameKey]) { r2g[data.gameKey].s1=data.s1; r2g[data.gameKey].s2=data.s2; r2g[data.gameKey].saved=true; }
       });
     });
   }
 
   async function finalizeR2(){
+    const calcStats = (pools, store, pfx) => {
+      const labs = ['A','B','C','D','E','F','G','H'];
+      const s = {};
+      pools.flat().forEach(p => { s[p]={w:0,l:0,pf:0,pa:0,pool:''}; });
+      pools.forEach((pool,pi) => {
+        pool.forEach(p => s[p].pool = labs[pi]);
+        makeGames(pool).forEach(g => {
+          const k = gkey(pfx, g.t1, g.t2);
+          const gd = store[k];
+          if(!gd||!gd.saved) return;
+          const ap = (team,sc,ag,win) => team.forEach(p => {s[p].pf+=sc; s[p].pa+=ag; if(win)s[p].w++;else s[p].l++;});
+          if(gd.s1>gd.s2){ ap(gd.t1,gd.s1,gd.s2,true); ap(gd.t2,gd.s2,gd.s1,false); }
+          else if(gd.s2>gd.s1){ ap(gd.t2,gd.s2,gd.s1,true); ap(gd.t1,gd.s1,gd.s2,false); }
+          else{ ap(gd.t1,gd.s1,gd.s2,false); ap(gd.t2,gd.s2,gd.s1,false); }
+        });
+      });
+      return s;
+    };
+    const poolsAreUneven = (pools) => [...new Set(pools.map(p=>p.length))].length>1;
+    const rankPlayers = (st,uneven) => {
+      return Object.entries(st).map(([n,s])=>({n,...s,diff:s.pf-s.pa}))
+        .sort((a,b) => {
+          if(uneven) return b.diff-a.diff;
+          if(a.w!==b.w) return b.w-a.w;
+          if(a.l!==b.l) return a.l-b.l;
+          return b.diff-a.diff;
+        });
+    };
     const s1 = calcStats(r1pools, r1g, 'r1');
     const s2 = calcStats(r2pools, r2g, 'r2');
-    const unevenFinal = poolsAreUneven(r1pools)||poolsAreUneven(r2pools);
+    const uneven = poolsAreUneven(r1pools)||poolsAreUneven(r2pools);
     const comb = {};
     players.forEach(p => {
-      const a = s1[p]||{w:0,l:0,pf:0,pa:0,pool:''};
-      const b = s2[p]||{w:0,l:0,pf:0,pa:0,pool:''};
-      comb[p] = {w:a.w+b.w,l:a.l+b.l,pf:a.pf+b.pf,pa:a.pa+b.pa,r1p:a.pool,r2p:b.pool};
+      const a = s1[p]||{w:0,l:0,pf:0,pa:0};
+      const b = s2[p]||{w:0,l:0,pf:0,pa:0};
+      comb[p] = {w:a.w+b.w,l:a.l+b.l,pf:a.pf+b.pf,pa:a.pa+b.pa};
     });
     const rk = Object.entries(comb).map(([n,s])=>({n,...s,diff:s.pf-s.pa}))
       .sort((a,b) => {
-        if(unevenFinal) return b.diff-a.diff;
+        if(uneven) return b.diff-a.diff;
         if(a.w!==b.w) return b.w-a.w;
         if(a.l!==b.l) return a.l-b.l;
         return b.diff-a.diff;
       });
     try {
-      await updateDoc(doc(db, 'tournaments', tournamentId), { status: 'final' });
+      await setDoc(doc(db, 'tournaments', tournamentId), { status: 'final', champion: rk[0].n, finalStandingsJson: JSON.stringify(rk) }, { merge:true });
     } catch(e) { console.error(e); }
-    renderFinalStandings(rk, unevenFinal, 'finalsc');
+    renderFinalStandings(rk, uneven, 'finalsc');
     document.getElementById('secOrgR2').classList.remove('active');
     document.getElementById('secOrgFinal').classList.add('active');
   }
 
-  /* ── SITTER JOIN ── */
-  async function joinFromUrl(){
-    const params = new URLSearchParams(window.location.search);
-    const tid = params.get('tournament');
-    if(!tid) return;
-    isSitter = true;
-    tournamentId = tid;
-    try {
-      const tourRef = doc(db, 'tournaments', tid);
-      const tourSnap = await getDoc(tourRef);
-      if(!tourSnap.exists()) { alert('Tournament not found'); return; }
-      const tdata = tourSnap.data();
-      players = tdata.players||[];
-      if(tdata.r1poolsJson) r1pools = JSON.parse(tdata.r1poolsJson);
-      r1g = buildStore('r1', r1pools);
-      // Find which pool this sitter belongs to (based on URL but we'll just show their pool)
-      showSitterR1();
-      listenToTournamentUpdates();
-    } catch(e) { alert('Error: ' + e.message); }
+  function renderFinalStandings(rk, uneven, cid){
+    let h = `<div class="card"><div class="card-title">🏆 Final Standings</div><table><thead><tr><th>#</th><th>Player</th>${!uneven?'<th>W</th><th>L</th>':''}<th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>`;
+    rk.forEach((r,i) => {
+      const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const pl = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+      const ds = r.diff>0?`+${r.diff}`:r.diff;
+      h += `<tr><td><span class="${cls}">${pl}</span></td><td style="font-weight:600;">${r.n}</td>${!uneven?`<td>${r.w}W</td><td>${r.l}L</td>`:''}
+      <td style="color:${r.diff>0?'#16a34a':r.diff<0?'#dc2626':'#888'};font-weight:600;">${ds}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+    });
+    h += `</tbody></table></div>`;
+    document.getElementById(cid).innerHTML = h;
   }
 
-  function listenToTournamentUpdates(){
-    const tourRef = doc(db, 'tournaments', tournamentId);
-    onSnapshot(tourRef, (snap) => {
-      if(!snap.exists()) return;
-      const data = snap.data();
-      if(data.r1poolsJson && !r1pools.length) r1pools = JSON.parse(data.r1poolsJson);
-      if(data.r2poolsJson && !r2pools.length) {
-        r2pools = JSON.parse(data.r2poolsJson);
-        r2g = buildStore('r2', r2pools);
-        showSitterR2();
-      }
-    });
-    const scoresRef = collection(db, 'tournaments', tournamentId, 'scores');
-    onSnapshot(scoresRef, (snap) => {
-      snap.forEach(doc => {
-        const data = doc.data();
-        if(data.round==='r1' && r1g[data.gameKey]) {
-          r1g[data.gameKey].s1 = data.s1;
-          r1g[data.gameKey].s2 = data.s2;
-          r1g[data.gameKey].saved = true;
-        }
-        if(data.round==='r2' && r2g[data.gameKey]) {
-          r2g[data.gameKey].s1 = data.s1;
-          r2g[data.gameKey].s2 = data.s2;
-          r2g[data.gameKey].saved = true;
-        }
-      });
-    });
-  }
-
+  /* ── SITTER ── */
   function showSitterR1(){
-    document.getElementById('secSetup').classList.remove('active');
+    document.getElementById('secHome').classList.remove('active');
     document.getElementById('secSitterR1').classList.add('active');
     renderSitterR1();
   }
-
+  
   function renderSitterR1(){
-    document.getElementById('sitterR1info').textContent = 'Round 1 pool play — tap a game to score';
+    document.getElementById('sitterR1info').textContent = 'Round 1 — tap a game to score';
     let html = '';
-    r1pools.forEach((pool,pi) => {
+    r1pools.forEach((pool, pi) => {
       const games = makeGames(pool);
       const rules = poolRules(pool.length);
-      const isMine = pool.some(p => true); // in real app, check if sitter is in this pool
-      html += `<div class="card">
-        <div class="pool-label">Your Pool (${pool.length} players)</div>
-        <div style="font-size:12px;color:#888;margin-bottom:8px;">${pool.join(' · ')}</div>
-        <div class="divider"></div>`;
+      html += `<div class="card"><div class="pool-label">Your Pool</div><div class="divider"></div>`;
       games.forEach((g,gi) => {
         const k = gkey('r1', g.t1, g.t2);
         const sv = r1g[k]||{};
-        const scoreStr = sv.saved||sv.live?`${sv.s1} – ${sv.s2}`:'–';
-        html += `<div class="gc ${sv.saved?'done':''}" id="gc_${k}" style="cursor:${sv.saved?'default':'pointer'};user-select:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div style="font-size:13px;font-weight:500;flex:1;">${g.t1[0]} &amp; ${g.t1[1]}</div>
-            <div style="font-size:15px;font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:60px;text-align:center;">${scoreStr}</div>
-            <div style="font-size:13px;font-weight:500;flex:1;text-align:right;">${g.t2[0]} &amp; ${g.t2[1]}</div>
-          </div>
-        </div>`;
+        const scoreStr = sv.saved?`${sv.s1} – ${sv.s2}`:'–';
+        html += `<div class="gc ${sv.saved?'done':''}" onclick="openSitter('r1','${k}',${rules.target},${rules.cap})" style="cursor:pointer;"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="flex:1;font-size:12px;font-weight:500;">${g.t1[0]} &amp; ${g.t1[1]}</div><div style="font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:50px;text-align:center;">${scoreStr}</div><div style="flex:1;text-align:right;font-size:12px;font-weight:500;">${g.t2[0]} &amp; ${g.t2[1]}</div></div></div>`;
       });
       html += '</div>';
     });
     document.getElementById('sitterPoolContent').innerHTML = html;
-    // Attach click handlers AFTER rendering
-    r1pools.forEach((pool,pi) => {
-      const games = makeGames(pool);
-      const rules = poolRules(pool.length);
-      games.forEach((g,gi) => {
-        const k = gkey('r1', g.t1, g.t2);
-        const el = document.getElementById(`gc_${k}`);
-        if(el && !r1g[k]?.saved) {
-          el.addEventListener('click', () => openSitter('r1', k, rules.target, rules.cap));
-        }
-      });
-    });
+  }
+
+  function showSitterR1Stand(){
+    document.getElementById('secHome').classList.remove('active');
+    document.getElementById('secSitterR1Stand').classList.add('active');
   }
 
   function showSitterR2(){
-    document.getElementById('secSitterR1').classList.remove('active');
+    document.getElementById('secHome').classList.remove('active');
     document.getElementById('secSitterR2').classList.add('active');
     renderSitterR2();
   }
 
   function renderSitterR2(){
-    document.getElementById('sitterR2info').textContent = 'Round 2 pool play — tap a game to score';
+    document.getElementById('sitterR2info').textContent = 'Round 2 — tap a game to score';
     let html = '';
-    r2pools.forEach((pool,pi) => {
+    r2pools.forEach((pool, pi) => {
       const games = makeGames(pool);
       const rules = poolRules(pool.length);
-      html += `<div class="card">
-        <div class="pool-label">Your Pool (${pool.length} players)</div>
-        <div style="font-size:12px;color:#888;margin-bottom:8px;">${pool.join(' · ')}</div>
-        <div class="divider"></div>`;
+      html += `<div class="card"><div class="pool-label">Your Pool</div><div class="divider"></div>`;
       games.forEach((g,gi) => {
         const k = gkey('r2', g.t1, g.t2);
         const sv = r2g[k]||{};
-        const scoreStr = sv.saved||sv.live?`${sv.s1} – ${sv.s2}`:'–';
-        html += `<div class="gc ${sv.saved?'done':''}" id="gc_${k}" style="cursor:${sv.saved?'default':'pointer'};user-select:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div style="font-size:13px;font-weight:500;flex:1;">${g.t1[0]} &amp; ${g.t1[1]}</div>
-            <div style="font-size:15px;font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:60px;text-align:center;">${scoreStr}</div>
-            <div style="font-size:13px;font-weight:500;flex:1;text-align:right;">${g.t2[0]} &amp; ${g.t2[1]}</div>
-          </div>
-        </div>`;
+        const scoreStr = sv.saved?`${sv.s1} – ${sv.s2}`:'–';
+        html += `<div class="gc ${sv.saved?'done':''}" onclick="openSitter('r2','${k}',${rules.target},${rules.cap})" style="cursor:pointer;"><div style="display:flex;align-items:center;justify-content:space-between;"><div style="flex:1;font-size:12px;font-weight:500;">${g.t1[0]} &amp; ${g.t1[1]}</div><div style="font-weight:700;color:${sv.saved?'#15803d':'#aaa'};min-width:50px;text-align:center;">${scoreStr}</div><div style="flex:1;text-align:right;font-size:12px;font-weight:500;">${g.t2[0]} &amp; ${g.t2[1]}</div></div></div>`;
       });
       html += '</div>';
     });
     document.getElementById('sitterPoolContent2').innerHTML = html;
-    // Attach click handlers AFTER rendering
-    r2pools.forEach((pool,pi) => {
-      const games = makeGames(pool);
-      const rules = poolRules(pool.length);
-      games.forEach((g,gi) => {
-        const k = gkey('r2', g.t1, g.t2);
-        const el = document.getElementById(`gc_${k}`);
-        if(el && !r2g[k]?.saved) {
-          el.addEventListener('click', () => openSitter('r2', k, rules.target, rules.cap));
-        }
-      });
-    });
   }
 
-  /* ── SITTER SCORING ── */
+  function showSitterFinal(){
+    document.getElementById('secHome').classList.remove('active');
+    document.getElementById('secSitterFinal').classList.add('active');
+  }
+
   function openSitter(pfx,k,target,cap){
     const store = pfx==='r1'?r1g:r2g;
     const gd = store[k];
@@ -730,8 +840,6 @@ tbody tr:hover{background:#fdfcfa;}
 
   function closeSitter(){
     document.getElementById('sitterOverlay').classList.remove('active');
-    const store = sitter.pfx==='r1'?r1g:r2g;
-    if(store[sitter.k]){ store[sitter.k].s1=sitter.s1; store[sitter.k].s2=sitter.s2; }
   }
 
   function sitterTap(team,delta){
@@ -741,21 +849,20 @@ tbody tr:hover{background:#fdfcfa;}
   }
 
   function updateSitterBoard(){
-    const {s1,s2,ptTarget,ptCap} = sitter;
-    document.getElementById('st1score').textContent = s1;
-    document.getElementById('st2score').textContent = s2;
-    const t1win = s1>s2;
+    document.getElementById('st1score').textContent = sitter.s1;
+    document.getElementById('st2score').textContent = sitter.s2;
+    const t1win = sitter.s1>sitter.s2;
     document.getElementById('st1').classList.toggle('winning', t1win);
-    document.getElementById('st2').classList.toggle('winning', !t1win && s2>s1);
-    document.getElementById('winByNote').textContent = winByNote(s1,s2,ptTarget,ptCap);
-    document.getElementById('sitterSubmit').disabled = !isValidFinal(s1,s2,ptTarget,ptCap);
+    document.getElementById('st2').classList.toggle('winning', !t1win && sitter.s2>sitter.s1);
+    document.getElementById('winByNote').textContent = winByNote(sitter.s1,sitter.s2,sitter.ptTarget,sitter.ptCap);
+    document.getElementById('sitterSubmit').disabled = !isValidFinal(sitter.s1,sitter.s2,sitter.ptTarget,sitter.ptCap);
   }
 
   async function submitSitter(){
     const {pfx,k,s1,s2} = sitter;
     if(!isValidFinal(s1,s2,sitter.ptTarget,sitter.ptCap)) return;
     const store = pfx==='r1'?r1g:r2g;
-    store[k] = {...store[k], s1, s2, saved:true, live:false};
+    store[k] = {...store[k], s1, s2, saved:true};
     try {
       await setDoc(doc(db, 'tournaments', tournamentId, 'scores', k), {
         gameKey: k, round: pfx, s1, s2, submittedAt: new Date()
@@ -766,181 +873,26 @@ tbody tr:hover{background:#fdfcfa;}
     else renderSitterR2();
   }
 
-  /* ── STATS ── */
-  function calcStats(pools, store, pfx){
-    const labs = ['A','B','C','D','E','F','G','H'];
-    const s = {};
-    pools.flat().forEach(p => { s[p]={w:0,l:0,pf:0,pa:0,pool:''}; });
-    pools.forEach((pool,pi) => {
-      pool.forEach(p => s[p].pool = labs[pi]);
-      makeGames(pool).forEach(g => {
-        const k = gkey(pfx, g.t1, g.t2);
-        const gd = store[k];
-        if(!gd||!gd.saved) return;
-        const ap = (team,sc,ag,win) => team.forEach(p => {
-          s[p].pf+=sc; s[p].pa+=ag; if(win)s[p].w++;else s[p].l++;
-        });
-        if(gd.s1>gd.s2){ ap(gd.t1,gd.s1,gd.s2,true); ap(gd.t2,gd.s2,gd.s1,false); }
-        else if(gd.s2>gd.s1){ ap(gd.t2,gd.s2,gd.s1,true); ap(gd.t1,gd.s1,gd.s2,false); }
-        else{ ap(gd.t1,gd.s1,gd.s2,false); ap(gd.t2,gd.s2,gd.s1,false); }
-      });
-    });
-    return s;
-  }
-
-  function poolsAreUneven(pools){ return [...new Set(pools.map(p=>p.length))].length>1; }
-
-  function rankPlayers(st,uneven){
-    return Object.entries(st).map(([n,s])=>({n,...s,diff:s.pf-s.pa}))
-      .sort((a,b) => {
-        if(uneven) return b.diff-a.diff;
-        if(a.w!==b.w) return b.w-a.w;
-        if(a.l!==b.l) return a.l-b.l;
-        return b.diff-a.diff;
-      });
-  }
-
-  function renderR1Standings(rk, uneven, cid){
-    const rankNote = uneven?'Pools have different sizes — ranked by point differential only':'Ranked: wins → losses → point differential';
-    let h = `<div class="card">
-      <div class="card-title">Round 1 Standings</div>
-      <div style="font-size:12px;color:#888;margin-bottom:1rem;">${rankNote}</div>
-      <table><thead><tr><th>#</th><th>Player</th>${!uneven?'<th>W</th><th>L</th>':''}<th>Diff</th><th>PF</th><th>PA</th><th>Pool</th></tr></thead><tbody>`;
-    rk.forEach((r,i) => {
-      const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'gr';
-      const pl = i===0?'1st':i===1?'2nd':i===2?'3rd':`${i+1}`;
-      const ds = r.diff>0?`+${r.diff}`:String(r.diff);
-      const dc = r.diff>0?'#16a34a':r.diff<0?'#dc2626':'#888';
-      h += `<tr><td><span class="${cls}">${pl}</span></td><td style="font-weight:${i<3?600:400}">${r.n}</td>${!uneven?`<td><span class="bw">${r.w}W</span></td><td><span class="bl">${r.l}L</span></td>`:''}
-      <td style="font-weight:600;color:${dc}">${ds}</td><td>${r.pf}</td><td>${r.pa}</td><td><span class="pn">Pool ${r.pool||'—'}</span></td></tr>`;
-    });
-    h += `</tbody></table></div>`;
-    document.getElementById(cid).innerHTML = h;
-  }
-
-  function renderFinalStandings(rk, uneven, cid){
-    const rankNote = uneven?'Pools have different sizes — ranked by point differential only':'Ranked: wins → losses → point differential';
-    let h = `<div class="card">
-      <div class="card-title">🏆 Final Standings</div>
-      <div style="font-size:12px;color:#888;margin-bottom:1rem;">${rankNote}</div>
-      <table><thead><tr><th>#</th><th>Player</th>${!uneven?'<th>W</th><th>L</th>':''}<th>Diff</th><th>PF</th><th>PA</th><th>R1</th><th>R2</th></tr></thead><tbody>`;
-    rk.forEach((r,i) => {
-      const cls = i===0?'gold':i===1?'silver':i===2?'bronze':'gr';
-      const pl = i===0?'🥇 1st':i===1?'🥈 2nd':i===2?'🥉 3rd':`${i+1}`;
-      const ds = r.diff>0?`+${r.diff}`:String(r.diff);
-      const dc = r.diff>0?'#16a34a':r.diff<0?'#dc2626':'#888';
-      h += `<tr><td><span class="${cls}">${pl}</span></td><td style="font-weight:${i<3?600:400}">${r.n}</td>${!uneven?`<td><span class="bw">${r.w}W</span></td><td><span class="bl">${r.l}L</span></td>`:''}
-      <td style="font-weight:600;color:${dc}">${ds}</td><td>${r.pf}</td><td>${r.pa}</td><td><span class="pn">Pool ${r.r1p||'—'}</span></td><td><span class="pn">Pool ${r.r2p||'—'}</span></td></tr>`;
-    });
-    h += `</tbody></table></div>`;
-    const tot = Object.values({...r1g,...r2g}).filter(g=>g.saved).length;
-    h += `<div class="card"><div class="stat-row"><div><div class="stat-label">Champion</div><div class="stat-val">🏆 ${rk[0].n}</div></div><div><div class="stat-label">Games played</div><div class="stat-val">${tot}</div></div></div></div>`;
-    document.getElementById(cid).innerHTML = h;
-  }
-
-  async function restoreOrganizerSession(tid){
-    isOrganizer = true;
-    tournamentId = tid;
-    try {
-      const tourRef = doc(db, 'tournaments', tid);
-      const tourSnap = await getDoc(tourRef);
-      if(!tourSnap.exists()) { localStorage.removeItem('orgTournamentId'); return; }
-      const tdata = tourSnap.data();
-      players = tdata.players||[];
-      if(tdata.r1poolsJson) r1pools = JSON.parse(tdata.r1poolsJson);
-      if(tdata.r2poolsJson) r2pools = JSON.parse(tdata.r2poolsJson);
-      r1g = buildStore('r1', r1pools);
-      r2g = buildStore('r2', r2pools);
-      
-      // Determine which screen to show based on status
-      if(tdata.status==='round1') {
-        showOrgR1();
-      } else if(tdata.status==='r1standings') {
-        const st = calcStats(r1pools, r1g, 'r1');
-        const uneven = poolsAreUneven(r1pools);
-        const rk = rankPlayers(st, uneven);
-        renderR1Standings(rk, uneven, 'r1sc');
-        document.getElementById('secSetup').classList.remove('active');
-        document.getElementById('secOrgR1Stand').classList.add('active');
-      } else if(tdata.status==='round2') {
-        renderOrgR2();
-        document.getElementById('secSetup').classList.remove('active');
-        document.getElementById('secOrgR2').classList.add('active');
-      } else if(tdata.status==='final') {
-        // Recalc from Firebase
-        const s1 = calcStats(r1pools, r1g, 'r1');
-        const s2 = calcStats(r2pools, r2g, 'r2');
-        const unevenFinal = poolsAreUneven(r1pools)||poolsAreUneven(r2pools);
-        const comb = {};
-        players.forEach(p => {
-          const a = s1[p]||{w:0,l:0,pf:0,pa:0,pool:''};
-          const b = s2[p]||{w:0,l:0,pf:0,pa:0,pool:''};
-          comb[p] = {w:a.w+b.w,l:a.l+b.l,pf:a.pf+b.pf,pa:a.pa+b.pa,r1p:a.pool,r2p:b.pool};
-        });
-        const rk = Object.entries(comb).map(([n,s])=>({n,...s,diff:s.pf-s.pa}))
-          .sort((a,b) => {
-            if(unevenFinal) return b.diff-a.diff;
-            if(a.w!==b.w) return b.w-a.w;
-            if(a.l!==b.l) return a.l-b.l;
-            return b.diff-a.diff;
-          });
-        renderFinalStandings(rk, unevenFinal, 'finalsc');
-        document.getElementById('secSetup').classList.remove('active');
-        document.getElementById('secOrgFinal').classList.add('active');
-      }
-      listenToAllScores();
-    } catch(e) { console.error(e); }
-  }
-
-  function listenToAllScores(){
-    const scoresRef = collection(db, 'tournaments', tournamentId, 'scores');
-    onSnapshot(scoresRef, (snap) => {
-      snap.forEach(doc => {
-        const data = doc.data();
-        if(data.round==='r1' && r1g[data.gameKey]) {
-          r1g[data.gameKey].s1 = data.s1;
-          r1g[data.gameKey].s2 = data.s2;
-          r1g[data.gameKey].saved = true;
-        }
-        if(data.round==='r2' && r2g[data.gameKey]) {
-          r2g[data.gameKey].s1 = data.s1;
-          r2g[data.gameKey].s2 = data.s2;
-          r2g[data.gameKey].saved = true;
-        }
-      });
-      // Update UI
-      const r1Info = document.getElementById('r1PoolsOrg');
-      if(r1Info) renderOrgR1();
-      const r2Info = document.getElementById('r2PoolsOrg');
-      if(r2Info) renderOrgR2();
-    });
-  }
-
-  /* ── INIT ── */
+  /* ── GLOBALS ── */
+  window.showTab = showTab;
+  window.showCreateTour = showCreateTour;
+  window.backHome = backHome;
   window.addP = addP;
   window.delP = delP;
-  window.startTournament = startTournament;
+  window.createTournament = createTournament;
+  window.joinTournament = joinTournament;
+  window.viewTournamentResults = viewTournamentResults;
+  window.finalizeR1 = finalizeR1;
+  window.genR2Pools = genR2Pools;
+  window.finalizeR2 = finalizeR2;
   window.openSitter = openSitter;
   window.closeSitter = closeSitter;
   window.sitterTap = sitterTap;
   window.submitSitter = submitSitter;
-  window.finalizeR1 = finalizeR1;
-  window.genR2Pools = genR2Pools;
-  window.finalizeR2 = finalizeR2;
   window.copyLink = (url) => { navigator.clipboard.writeText(url); alert('Link copied!'); };
 
-  // Check if organizer or sitter on page load
-  const params = new URLSearchParams(window.location.search);
-  const tourParam = params.get('tournament');
-  const savedOrgId = localStorage.getItem('orgTournamentId');
-  
-  if(tourParam) {
-    // Sitter joining via link
-    joinFromUrl();
-  } else if(savedOrgId) {
-    // Organizer refreshing — restore their tournament
-    restoreOrganizerSession(savedOrgId);
-  }
+  // Auto-load home
+  showTab('current');
 })();
 </script>
 
