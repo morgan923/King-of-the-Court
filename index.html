@@ -318,20 +318,31 @@ async function joinTournament(){
 }
 
 function listenToTournament(){
+  if(!tournamentId) return;
   const tourRef = doc(db, 'tournaments', tournamentId);
   onSnapshot(tourRef, (snap) => {
-    if(!snap.exists()) return;
+    if(!snap.exists()) {
+      console.log('Tournament does not exist yet, waiting...');
+      return;
+    }
     const data = snap.data();
+    console.log('Tournament data:', data);
     // Load state from Firebase
     if(data.players) players = data.players;
     if(data.r1pools) r1pools = data.r1pools;
     if(data.r2pools) r2pools = data.r2pools;
-    // Refresh current view
-    const activeTab = document.querySelector('.tab.active');
-    if(activeTab) {
-      const tabIdx = Array.from(document.querySelectorAll('.tab')).indexOf(activeTab);
-      refreshTab(tabIdx);
+    // Update UI
+    if(!isOrganizer) {
+      // Sitter view - show pools when they're available
+      if(data.r1pools && data.r1pools.length > 0) {
+        r1g = buildStore('r1', r1pools);
+        document.getElementById('sec1').style.display = 'block';
+        document.getElementById('sec1').innerHTML = '<div id="r1p"></div>';
+        renderRound('r1', r1pools, r1g, 'r1p', 'r1i', null);
+      }
     }
+  }, (error) => {
+    console.error('Listen error:', error);
   });
   // Listen to game scores
   listenToScores();
@@ -457,7 +468,7 @@ async function startR1(){
     await setDoc(doc(db, 'tournaments', tournamentId), {
       tournamentId: tournamentId,
       players: players,
-      r1pools: r1pools,
+      r1poolsJson: JSON.stringify(r1pools),
       createdAt: new Date(),
       status: 'round1'
     });
