@@ -258,6 +258,7 @@ function openScoring(gameId, team1, team2) {
   document.getElementById('score2').textContent = '0';
   
   updateTeamStyles();
+  updateSubmitButton();
   document.getElementById('overlay').classList.add('active');
   document.getElementById('modal').classList.add('active');
 }
@@ -272,6 +273,7 @@ function tapScore(team, delta) {
   currentScore[key] = Math.max(0, Math.min(25, currentScore[key] + delta));
   document.getElementById(`score${team}`).textContent = currentScore[key];
   updateTeamStyles();
+  updateSubmitButton();
 }
 
 function updateTeamStyles() {
@@ -279,27 +281,83 @@ function updateTeamStyles() {
   document.getElementById('team2').classList.toggle('winning', currentScore.s2 > currentScore.s1);
 }
 
+function isValidScore() {
+  const s1 = currentScore.s1;
+  const s2 = currentScore.s2;
+  
+  // Must have different scores
+  if (s1 === s2) return false;
+  
+  const winner = Math.max(s1, s2);
+  const loser = Math.min(s1, s2);
+  
+  // Winner must be at least 15 (or 21 for 4-player)
+  if (winner < 15) return false;
+  
+  // Must win by 2 OR reach the cap
+  if (winner === 21 || winner === 28) return true; // At cap
+  if (winner - loser >= 2) return true; // Win by 2
+  
+  return false;
+}
+
+function updateSubmitButton() {
+  const btn = document.querySelector('.btn.primary[onclick="submitScore()"]');
+  if (isValidScore()) {
+    btn.style.background = '#16a34a';
+    btn.style.borderColor = '#16a34a';
+    btn.disabled = false;
+  } else {
+    btn.style.background = '#dc2626';
+    btn.style.borderColor = '#dc2626';
+    btn.style.opacity = '0.5';
+    btn.disabled = true;
+  }
+}
+
 async function submitScore() {
   try {
-    if (!firebaseReady || !db) return;
+    if (!firebaseReady || !db) {
+      alert('Firebase not ready');
+      return;
+    }
     
+    if (!isValidScore()) {
+      alert('Invalid score');
+      return;
+    }
+    
+    if (!currentTourId || !currentGameId) {
+      alert('Missing tournament or game ID');
+      return;
+    }
+
     const t1 = currentGame.team1.split(' & ');
     const t2 = currentGame.team2.split(' & ');
     
+    console.log('Submitting score:', {
+      gameId: currentGameId,
+      t1: t1,
+      s1: currentScore.s1,
+      t2: t2,
+      s2: currentScore.s2
+    });
+
     await db.collection('tournaments').doc(currentTourId).collection('scores').doc(currentGameId).set({
       gameId: currentGameId,
       t1: t1,
       s1: currentScore.s1,
       t2: t2,
       s2: currentScore.s2,
-      submittedAt: new Date()
+      submittedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     
-    console.log('Score submitted');
+    console.log('Score submitted successfully');
+    alert('✓ Score saved!');
     closeModal();
     loadGames();
   } catch (e) {
-    console.error('Error:', e);
+    console.error('Error submitting score:', e);
     alert('Error submitting score: ' + e.message);
   }
 }
