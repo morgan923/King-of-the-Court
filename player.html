@@ -378,6 +378,9 @@ function switchSides() {
   document.getElementById('team1Name').textContent = tempName2;
   document.getElementById('team2Name').textContent = tempName1;
   
+  // Hide the switch notice immediately
+  document.getElementById('switchNotice').style.display = 'none';
+  
   // Update team colors
   updateTeamStyles();
   updateSubmitButton();
