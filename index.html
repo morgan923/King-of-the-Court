@@ -274,8 +274,10 @@ window.selectAdmin = function() {
   if(adminActiveTabs.length > 0) {
     adminActiveTabs.forEach((t,i) => t.classList.toggle('active', i===0));
   }
-  // Load active tournaments
-  if(window.loadAdminActive) window.loadAdminActive();
+  // Load tournaments asynchronously
+  setTimeout(() => {
+    if(window._loadAdminActive) window._loadAdminActive();
+  }, 100);
 };
 
 window.selectUser = function() {
@@ -286,8 +288,10 @@ window.selectUser = function() {
   if(userActiveTabs.length > 0) {
     userActiveTabs.forEach((t,i) => t.classList.toggle('active', i===0));
   }
-  // Load active tournaments
-  if(window.loadUserActive) window.loadUserActive();
+  // Load tournaments asynchronously
+  setTimeout(() => {
+    if(window._loadUserActive) window._loadUserActive();
+  }, 100);
 };
 
 window.logout = function() {
@@ -353,7 +357,7 @@ window.showUserTab = function() {};
     }
   };
 
-  async function loadAdminActive(){
+  window._loadAdminActive = async function loadAdminActive(){
     try {
       const q = query(collection(db, 'tournaments'), where('status', 'in', ['round1', 'r1standings', 'round2']));
       const snap = await getDocs(q);
@@ -372,9 +376,9 @@ window.showUserTab = function() {};
       if(!html) html = '<div class="card"><p style="color:#aaa;text-align:center;">No active tournaments</p></div>';
       document.getElementById('adminActive').innerHTML = html;
     } catch(e) { console.error(e); }
-  }
+  };
 
-  async function loadAdminPast(){
+  window._loadAdminPast = async function loadAdminPast(){
     try {
       const q = query(collection(db, 'tournaments'), where('status', '==', 'final'));
       const snap = await getDocs(q);
@@ -422,7 +426,7 @@ window.showUserTab = function() {};
     }
   };
 
-  async function loadUserActive(){
+  window._loadUserActive = async function loadUserActive(){
     try {
       const q = query(collection(db, 'tournaments'), where('status', 'in', ['round1', 'r1standings', 'round2']));
       const snap = await getDocs(q);
@@ -441,9 +445,9 @@ window.showUserTab = function() {};
       if(!html) html = '<div class="card"><p style="color:#aaa;text-align:center;">No active tournaments</p></div>';
       document.getElementById('userActive').innerHTML = html;
     } catch(e) { console.error(e); }
-  }
+  };
 
-  async function loadUserPast(){
+  window._loadUserPast = async function loadUserPast(){
     try {
       const q = query(collection(db, 'tournaments'), where('status', '==', 'final'));
       const snap = await getDocs(q);
