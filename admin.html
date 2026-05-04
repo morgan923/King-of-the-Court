@@ -60,7 +60,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
       </div>
       <div style="margin-bottom: 12px;">
         <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Date/Time</label>
-        <input type="text" id="tourDate" style="width: 100%;" placeholder="e.g. Tue 7pm"/>
+        <input type="datetime-local" id="tourDate" style="width: 100%; padding: 10px;"/>
       </div>
       <div style="margin-bottom: 12px;">
         <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Add Players</label>
@@ -173,11 +173,11 @@ function removePlayer(i) {
 
 async function createTournament() {
   const name = document.getElementById('tourName').value.trim();
-  const date = document.getElementById('tourDate').value.trim();
+  const dateInput = document.getElementById('tourDate').value;
   
   document.getElementById('createErr').textContent = '';
   
-  if (!name || !date) {
+  if (!name || !dateInput) {
     document.getElementById('createErr').textContent = 'Fill in all fields';
     return;
   }
@@ -185,6 +185,11 @@ async function createTournament() {
     document.getElementById('createErr').textContent = 'Add at least 4 players';
     return;
   }
+
+  // Format date nicely
+  const dateObj = new Date(dateInput);
+  const date = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' at ' + 
+               dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
   const tourId = Math.random().toString(36).substring(2, 8).toUpperCase();
   
@@ -194,6 +199,7 @@ async function createTournament() {
       id: tourId,
       name: name,
       date: date,
+      dateTime: dateInput,
       players: currentPlayers,
       playerCount: currentPlayers.length,
       createdAt: new Date(),
