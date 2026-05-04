@@ -16,11 +16,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .btn:hover { background: #f5f4f0; }
 .btn.primary { background: #1a56db; color: #fff; border-color: #1a56db; }
 .btn.primary:hover { background: #1e40af; }
-.tour-card { background: #fff; border: 1px solid #e5e4e0; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; cursor: pointer; transition: all 0.12s; }
-.tour-card:hover { border-color: #1a56db; box-shadow: 0 2px 8px rgba(26, 86, 219, 0.1); }
+.tour-card { background: #fff; border: 1px solid #e5e4e0; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; cursor: pointer; }
+.tour-card:hover { border-color: #1a56db; box-shadow: 0 2px 8px rgba(26,86,219,0.1); }
 .game-card { border: 1px solid #eeede9; border-radius: 8px; padding: 1rem; margin-bottom: 8px; cursor: pointer; background: #faf9f7; }
 .game-card:hover { background: #f0f9ff; border-color: #1a56db; }
-.game-card.submitted { background: #f0fdf4; border-color: #16a34a; }
 .hidden { display: none; }
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; }
 .overlay.active { display: block; }
@@ -34,6 +33,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .score-btn { width: 100%; height: 48px; font-size: 18px; font-weight: 700; border: none; cursor: pointer; border-radius: 6px; margin-bottom: 6px; }
 .score-plus { background: #1a1a1a; color: #fff; }
 .score-minus { background: #f3f4f6; color: #6b7280; }
+.success { color: #16a34a; padding: 12px; background: #f0fdf4; border-radius: 8px; margin: 8px 0; font-size: 13px; }
+.error { color: #dc2626; padding: 12px; background: #fee2e2; border-radius: 8px; margin: 8px 0; font-size: 13px; }
+.info { color: #0369a1; padding: 12px; background: #e0f2fe; border-radius: 8px; margin: 8px 0; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -48,6 +50,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <div class="card">
       <div class="card-title">Active Tournaments</div>
     </div>
+    <div id="firebaseStatus"></div>
     <div id="tourList"></div>
   </div>
 
@@ -89,10 +92,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button class="btn primary" style="width: 100%;" onclick="submitScore()">Submit Score</button>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+<!-- Firebase Scripts -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
+let firebaseReady = false;
+let db = null;
+let currentTourId = null;
+let currentGameId = null;
+let currentScore = { s1: 0, s2: 0 };
+let currentGame = null;
+
 const firebaseConfig = {
   apiKey: "AIzaSyBQAx2DK8mm7lyGTqaqhWYfTTTBc3DznUg",
   authDomain: "kob-tournament-d7241.firebaseapp.com",
@@ -102,13 +113,21 @@ const firebaseConfig = {
   appId: "1:147933432566:web:9f4377719d51b058b9fad7"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-let currentTourId = null;
-let currentGameId = null;
-let currentScore = { s1: 0, s2: 0 };
-let currentGame = null;
+// Initialize Firebase
+function initFirebase() {
+  try {
+    console.log('Initializing Firebase...');
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseReady = true;
+    console.log('Firebase initialized successfully');
+    document.getElementById('firebaseStatus').innerHTML = '<div class="success">✓ Firebase connected</div>';
+  } catch (e) {
+    console.error('Firebase error:', e);
+    firebaseReady = false;
+    document.getElementById('firebaseStatus').innerHTML = '<div class="error">❌ Firebase error: ' + e.message + '</div>';
+  }
+}
 
 function goHome() {
   document.getElementById('homeScreen').classList.remove('hidden');
@@ -116,17 +135,23 @@ function goHome() {
   loadTournaments();
 }
 
-function showScreen(name) {
-  document.getElementById('homeScreen').classList.toggle('hidden', name !== 'home');
-  document.getElementById('tourScreen').classList.toggle('hidden', name !== 'tour');
-}
-
 async function loadTournaments() {
   try {
-    const snap = await db.collection('tournaments').where('status', 'in', ['setup', 'pools_created']).get();
+    if (!firebaseReady || !db) {
+      console.error('Firebase not ready');
+      document.getElementById('tourList').innerHTML = '<div class="info">Loading Firebase...</div>';
+      return;
+    }
+
+    console.log('Loading tournaments...');
+    const snap = await db.collection('tournaments').where('status', 'in', ['setup', 'pools_created', 'round2']).get();
+    
+    console.log('Found', snap.size, 'tournaments');
+    
     let html = '';
     snap.forEach(doc => {
       const data = doc.data();
+      console.log('Tournament:', data.name, 'Status:', data.status);
       html += `
         <div class="tour-card" onclick="selectTour('${doc.id}')">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -137,43 +162,69 @@ async function loadTournaments() {
         </div>
       `;
     });
-    if (!html) html = '<div class="card"><p style="text-align: center; color: #aaa;">No active tournaments</p></div>';
+    
+    if (!html) {
+      html = '<div class="card"><p style="text-align: center; color: #aaa;">No active tournaments</p></div>';
+    }
+    
     document.getElementById('tourList').innerHTML = html;
   } catch (e) {
-    console.error(e);
+    console.error('Error loading tournaments:', e);
+    document.getElementById('tourList').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
 }
 
 async function selectTour(tourId) {
   currentTourId = tourId;
-  const doc = await db.collection('tournaments').doc(tourId).get();
-  const data = doc.data();
-  
-  document.getElementById('tourName').textContent = data.name;
-  document.getElementById('poolInfo').textContent = `${data.playerCount} players · ${data.date}`;
-  
-  showScreen('tour');
-  loadGames();
+  try {
+    if (!firebaseReady || !db) return;
+    
+    const doc = await db.collection('tournaments').doc(tourId).get();
+    const data = doc.data();
+    
+    document.getElementById('tourName').textContent = data.name;
+    document.getElementById('poolInfo').textContent = `${data.playerCount} players · ${data.date}`;
+    
+    document.getElementById('homeScreen').classList.add('hidden');
+    document.getElementById('tourScreen').classList.remove('hidden');
+    
+    loadGames();
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
 }
 
 async function loadGames() {
   try {
+    if (!firebaseReady || !db) return;
+    
     const doc = await db.collection('tournaments').doc(currentTourId).get();
     const data = doc.data();
-    const pools = data.pools || [];
+    const poolsJson = data.poolsJson;
     
-    if (pools.length === 0) {
+    if (!poolsJson) {
       document.getElementById('gamesList').innerHTML = '<p style="text-align: center; color: #aaa;">Waiting for admin to create pools...</p>';
       return;
     }
     
-    // Show first pool for now
-    const pool = pools[0];
+    const pools = JSON.parse(poolsJson);
+    if (pools.length === 0) {
+      document.getElementById('gamesList').innerHTML = '<p style="text-align: center; color: #aaa;">No pools yet</p>';
+      return;
+    }
+    
+    const pool = pools[0]; // Show first pool
     const games = [
       { id: 'g1', t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
       { id: 'g2', t1: [pool[0], pool[2]], t2: [pool[1], pool[3]] },
       { id: 'g3', t1: [pool[0], pool[3]], t2: [pool[1], pool[2]] }
     ];
+    
+    if (pool.length === 5) {
+      games.push({ id: 'g4', t1: [pool[0], pool[4]], t2: [pool[1], pool[3]] });
+      games.push({ id: 'g5', t1: [pool[2], pool[4]], t2: [pool[3], pool[1]] });
+    }
     
     let html = '';
     games.forEach(game => {
@@ -190,7 +241,8 @@ async function loadGames() {
     
     document.getElementById('gamesList').innerHTML = html;
   } catch (e) {
-    console.error(e);
+    console.error('Error:', e);
+    document.getElementById('gamesList').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
 }
 
@@ -229,23 +281,34 @@ function updateTeamStyles() {
 
 async function submitScore() {
   try {
+    if (!firebaseReady || !db) return;
+    
+    const t1 = currentGame.team1.split(' & ');
+    const t2 = currentGame.team2.split(' & ');
+    
     await db.collection('tournaments').doc(currentTourId).collection('scores').doc(currentGameId).set({
       gameId: currentGameId,
-      t1: currentGame.team1.split(' & '),
+      t1: t1,
       s1: currentScore.s1,
-      t2: currentGame.team2.split(' & '),
+      t2: t2,
       s2: currentScore.s2,
       submittedAt: new Date()
     });
+    
+    console.log('Score submitted');
     closeModal();
     loadGames();
   } catch (e) {
-    console.error(e);
+    console.error('Error:', e);
+    alert('Error submitting score: ' + e.message);
   }
 }
 
-// Load tournaments on startup
-loadTournaments();
+// Initialize on page load
+window.addEventListener('load', () => {
+  initFirebase();
+  loadTournaments();
+});
 </script>
 </body>
 </html>
