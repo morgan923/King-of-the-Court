@@ -350,11 +350,19 @@ function updateSubmitButton() {
   }
   
   // Check if switch is needed
+  // Show switch every 7 points: at 7, 14, 21, 28, 35, etc. but NOT after you've already switched
   const combined = currentScore.s1 + currentScore.s2;
-  const switchesNeeded = Math.floor(combined / 7);
   
-  if (switchesNeeded % 2 === 1) {
-    // Odd number of switches means we need to switch
+  // Check if we're at a multiple of 7 but haven't switched yet for this multiple
+  // combined = 7 to 13: need switch (1st switch)
+  // combined = 14 to 20: don't need switch (already switched)
+  // combined = 21 to 27: need switch (2nd switch)
+  // combined = 28 to 34: don't need switch (already switched)
+  
+  const cyclePosition = combined % 14;
+  
+  if (cyclePosition >= 7 && cyclePosition < 14) {
+    // We need to switch
     document.getElementById('switchNotice').style.display = 'block';
   } else {
     document.getElementById('switchNotice').style.display = 'none';
