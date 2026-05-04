@@ -73,6 +73,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   <button onclick="closeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1rem; font-size: 14px;" id="gameTitle"></div>
   
+  <!-- Switch notification -->
+  <div id="switchNotice" onclick="switchSides()" style="display: none; background: #fee2e2; border: 2px solid #dc2626; border-radius: 8px; padding: 12px; margin-bottom: 1rem; text-align: center; font-weight: 600; color: #dc2626; font-size: 13px; cursor: pointer;">
+    SWITCH SIDES! Tap to rotate →
+  </div>
+  
   <div class="score-display">
     <div class="score-team" id="team1">
       <div id="team1Name" style="font-size: 12px; font-weight: 600; margin-bottom: 8px;"></div>
@@ -343,6 +348,41 @@ function updateSubmitButton() {
     btn.style.opacity = '0.5';
     btn.disabled = true;
   }
+  
+  // Check if switch is needed
+  const combined = currentScore.s1 + currentScore.s2;
+  const switchesNeeded = Math.floor(combined / 7);
+  
+  if (switchesNeeded % 2 === 1) {
+    // Odd number of switches means we need to switch
+    document.getElementById('switchNotice').style.display = 'block';
+  } else {
+    document.getElementById('switchNotice').style.display = 'none';
+  }
+}
+
+function switchSides() {
+  // Swap team positions and scores
+  const temp1 = currentScore.s1;
+  const temp2 = currentScore.s2;
+  const tempName1 = document.getElementById('team1Name').textContent;
+  const tempName2 = document.getElementById('team2Name').textContent;
+  
+  // Swap scores
+  currentScore.s1 = temp2;
+  currentScore.s2 = temp1;
+  
+  // Update display
+  document.getElementById('score1').textContent = currentScore.s1;
+  document.getElementById('score2').textContent = currentScore.s2;
+  document.getElementById('team1Name').textContent = tempName2;
+  document.getElementById('team2Name').textContent = tempName1;
+  
+  // Update team colors
+  updateTeamStyles();
+  updateSubmitButton();
+  
+  console.log('Sides switched!');
 }
 
 async function submitScore() {
