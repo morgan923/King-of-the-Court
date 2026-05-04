@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Brevard Volleyball - Player</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; color: #1a1a1a; }
+.app { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+.header { text-align: center; margin-bottom: 2rem; border-bottom: 3px solid #1a56db; padding-bottom: 1rem; }
+.header h1 { font-size: 32px; font-weight: 700; color: #1a56db; margin-bottom: 4px; }
+.card { background: #fff; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid #e5e4e0; }
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 1rem; }
+.btn { padding: 10px 16px; font-size: 13px; cursor: pointer; border: 1px solid #d5d4d0; border-radius: 8px; background: #fff; font-weight: 500; }
+.btn:hover { background: #f5f4f0; }
+.btn.primary { background: #1a56db; color: #fff; border-color: #1a56db; }
+.btn.primary:hover { background: #1e40af; }
+.tour-card { background: #fff; border: 1px solid #e5e4e0; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; cursor: pointer; transition: all 0.12s; }
+.tour-card:hover { border-color: #1a56db; box-shadow: 0 2px 8px rgba(26, 86, 219, 0.1); }
+.game-card { border: 1px solid #eeede9; border-radius: 8px; padding: 1rem; margin-bottom: 8px; cursor: pointer; background: #faf9f7; }
+.game-card:hover { background: #f0f9ff; border-color: #1a56db; }
+.game-card.submitted { background: #f0fdf4; border-color: #16a34a; }
+.hidden { display: none; }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; }
+.overlay.active { display: block; }
+.modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border-radius: 12px; padding: 2rem; z-index: 101; max-width: 400px; width: 90%; display: none; }
+.modal.active { display: block; }
+.score-display { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; margin-bottom: 1rem; border: 1px solid #e5e4e0; border-radius: 8px; }
+.score-team { padding: 1rem; text-align: center; background: #faf9f7; }
+.score-team.winning { background: #f0fdf4; }
+.score-val { font-size: 36px; font-weight: 800; margin: 0.5rem 0; color: #1a56db; }
+.score-team.winning .score-val { color: #16a34a; }
+.score-btn { width: 100%; height: 48px; font-size: 18px; font-weight: 700; border: none; cursor: pointer; border-radius: 6px; margin-bottom: 6px; }
+.score-plus { background: #1a1a1a; color: #fff; }
+.score-minus { background: #f3f4f6; color: #6b7280; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>🏐 Brevard Volleyball</h1>
+    <p>Select tournament and keep score</p>
+  </div>
+
+  <!-- Home Screen -->
+  <div id="homeScreen">
+    <div class="card">
+      <div class="card-title">Active Tournaments</div>
+    </div>
+    <div id="tourList"></div>
+  </div>
+
+  <!-- Tournament Screen -->
+  <div id="tourScreen" class="hidden">
+    <div style="margin-bottom: 1rem;">
+      <button class="btn" onclick="goHome()">← Back</button>
+    </div>
+    <div class="card">
+      <div class="card-title" id="tourName"></div>
+      <div style="font-size: 12px; color: #666; margin-bottom: 1rem;" id="poolInfo"></div>
+      <div id="gamesList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Scoring Modal -->
+<div class="overlay" id="overlay"></div>
+<div class="modal" id="modal">
+  <button onclick="closeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+  <div style="font-weight: 600; margin-bottom: 1rem; font-size: 14px;" id="gameTitle"></div>
+  
+  <div class="score-display">
+    <div class="score-team" id="team1">
+      <div id="team1Name" style="font-size: 12px; font-weight: 600; margin-bottom: 8px;"></div>
+      <div class="score-val" id="score1">0</div>
+      <button class="score-btn score-plus" onclick="tapScore(1, 1)">+1</button>
+      <button class="score-btn score-minus" onclick="tapScore(1, -1)">−1</button>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; font-weight: 700; color: #aaa;">VS</div>
+    <div class="score-team" id="team2">
+      <div id="team2Name" style="font-size: 12px; font-weight: 600; margin-bottom: 8px;"></div>
+      <div class="score-val" id="score2">0</div>
+      <button class="score-btn score-plus" onclick="tapScore(2, 1)">+1</button>
+      <button class="score-btn score-minus" onclick="tapScore(2, -1)">−1</button>
+    </div>
+  </div>
+  
+  <button class="btn primary" style="width: 100%;" onclick="submitScore()">Submit Score</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBQAx2DK8mm7lyGTqaqhWYfTTTBc3DznUg",
+  authDomain: "kob-tournament-d7241.firebaseapp.com",
+  projectId: "kob-tournament-d7241",
+  storageBucket: "kob-tournament-d7241.appspot.com",
+  messagingSenderId: "147933432566",
+  appId: "1:147933432566:web:9f4377719d51b058b9fad7"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let currentTourId = null;
+let currentGameId = null;
+let currentScore = { s1: 0, s2: 0 };
+let currentGame = null;
+
+function goHome() {
+  document.getElementById('homeScreen').classList.remove('hidden');
+  document.getElementById('tourScreen').classList.add('hidden');
+  loadTournaments();
+}
+
+function showScreen(name) {
+  document.getElementById('homeScreen').classList.toggle('hidden', name !== 'home');
+  document.getElementById('tourScreen').classList.toggle('hidden', name !== 'tour');
+}
+
+async function loadTournaments() {
+  try {
+    const snap = await db.collection('tournaments').where('status', 'in', ['setup', 'pools_created']).get();
+    let html = '';
+    snap.forEach(doc => {
+      const data = doc.data();
+      html += `
+        <div class="tour-card" onclick="selectTour('${doc.id}')">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div class="card-title" style="margin-bottom: 0;">${data.name}</div>
+            <div style="font-size: 11px; background: #e8f0fe; color: #1a56db; padding: 3px 8px; border-radius: 6px; font-weight: 600;">● Active</div>
+          </div>
+          <div style="font-size: 12px; color: #666;">${data.playerCount} players · ${data.date}</div>
+        </div>
+      `;
+    });
+    if (!html) html = '<div class="card"><p style="text-align: center; color: #aaa;">No active tournaments</p></div>';
+    document.getElementById('tourList').innerHTML = html;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function selectTour(tourId) {
+  currentTourId = tourId;
+  const doc = await db.collection('tournaments').doc(tourId).get();
+  const data = doc.data();
+  
+  document.getElementById('tourName').textContent = data.name;
+  document.getElementById('poolInfo').textContent = `${data.playerCount} players · ${data.date}`;
+  
+  showScreen('tour');
+  loadGames();
+}
+
+async function loadGames() {
+  try {
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const pools = data.pools || [];
+    
+    if (pools.length === 0) {
+      document.getElementById('gamesList').innerHTML = '<p style="text-align: center; color: #aaa;">Waiting for admin to create pools...</p>';
+      return;
+    }
+    
+    // Show first pool for now
+    const pool = pools[0];
+    const games = [
+      { id: 'g1', t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
+      { id: 'g2', t1: [pool[0], pool[2]], t2: [pool[1], pool[3]] },
+      { id: 'g3', t1: [pool[0], pool[3]], t2: [pool[1], pool[2]] }
+    ];
+    
+    let html = '';
+    games.forEach(game => {
+      html += `
+        <div class="game-card" onclick="openScoring('${game.id}', '${game.t1.join(' & ')}', '${game.t2.join(' & ')}')">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; font-size: 13px; font-weight: 500;">${game.t1.join(' & ')}</div>
+            <div style="font-weight: 600; color: #1a56db; min-width: 40px; text-align: center;">–</div>
+            <div style="flex: 1; text-align: right; font-size: 13px; font-weight: 500;">${game.t2.join(' & ')}</div>
+          </div>
+        </div>
+      `;
+    });
+    
+    document.getElementById('gamesList').innerHTML = html;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function openScoring(gameId, team1, team2) {
+  currentGameId = gameId;
+  currentGame = { team1, team2 };
+  currentScore = { s1: 0, s2: 0 };
+  
+  document.getElementById('gameTitle').textContent = `${team1} vs ${team2}`;
+  document.getElementById('team1Name').textContent = team1;
+  document.getElementById('team2Name').textContent = team2;
+  document.getElementById('score1').textContent = '0';
+  document.getElementById('score2').textContent = '0';
+  
+  updateTeamStyles();
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('modal').classList.remove('active');
+}
+
+function tapScore(team, delta) {
+  const key = team === 1 ? 's1' : 's2';
+  currentScore[key] = Math.max(0, Math.min(25, currentScore[key] + delta));
+  document.getElementById(`score${team}`).textContent = currentScore[key];
+  updateTeamStyles();
+}
+
+function updateTeamStyles() {
+  document.getElementById('team1').classList.toggle('winning', currentScore.s1 > currentScore.s2);
+  document.getElementById('team2').classList.toggle('winning', currentScore.s2 > currentScore.s1);
+}
+
+async function submitScore() {
+  try {
+    await db.collection('tournaments').doc(currentTourId).collection('scores').doc(currentGameId).set({
+      gameId: currentGameId,
+      t1: currentGame.team1.split(' & '),
+      s1: currentScore.s1,
+      t2: currentGame.team2.split(' & '),
+      s2: currentScore.s2,
+      submittedAt: new Date()
+    });
+    closeModal();
+    loadGames();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// Load tournaments on startup
+loadTournaments();
+</script>
+</body>
+</html>

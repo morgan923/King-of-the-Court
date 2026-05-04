@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Brevard Volleyball Club</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; }
+.app { max-width: 1000px; margin: 0 auto; padding: 4rem 1rem; text-align: center; }
+h1 { font-size: 48px; font-weight: 700; margin-bottom: 12px; }
+p { font-size: 16px; color: #666; margin-bottom: 4rem; }
+.buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+@media (max-width: 640px) { .buttons { grid-template-columns: 1fr; } }
+a { text-decoration: none; color: inherit; }
+.btn-link { background: #fff; border: 2px solid #e5e4e0; border-radius: 12px; padding: 3rem 2rem; cursor: pointer; transition: all 0.15s; display: block; }
+.btn-link:hover { border-color: #1a56db; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+.btn-link.admin:hover { border-color: #dc2626; }
+.btn-icon { font-size: 48px; margin-bottom: 1rem; }
+.btn-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.btn-desc { font-size: 13px; color: #666; margin-bottom: 1.5rem; }
+.btn-action { padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-action.admin { background: #dc2626; color: #fff; }
+.btn-action.user { background: #1a56db; color: #fff; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>⛱️ Brevard Volleyball Club</h1>
+  <p>Live tournament scoring & management</p>
+
+  <div class="buttons">
+    <a href="admin.html" class="btn-link admin">
+      <div class="btn-icon">👨‍💼</div>
+      <div class="btn-title">Admin</div>
+      <div class="btn-desc">Create tournaments, manage scores & brackets</div>
+      <button class="btn-action admin">Open Admin</button>
+    </a>
+
+    <a href="player.html" class="btn-link">
+      <div class="btn-icon">🏐</div>
+      <div class="btn-title">Player</div>
+      <div class="btn-desc">Join tournament and keep score</div>
+      <button class="btn-action user">Open Player</button>
+    </a>
+  </div>
+</div>
+</body>
+</html>
