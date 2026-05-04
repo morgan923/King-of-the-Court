@@ -350,14 +350,16 @@ function updateSubmitButton() {
   }
   
   // Check if switch is needed
-  // Only show switch button when combined score is EXACTLY divisible by 7
-  // and greater than 0
   const combined = currentScore.s1 + currentScore.s2;
+  const remainder = combined % 7;
+  
+  console.log('Score:', currentScore.s1, '-', currentScore.s2, 'Combined:', combined, 'Mod 7:', remainder);
   
   if (combined > 0 && combined % 7 === 0) {
-    // We're at a switch point (7, 14, 21, 28, etc.)
+    console.log('SHOWING switch button');
     document.getElementById('switchNotice').style.display = 'block';
   } else {
+    console.log('HIDING switch button');
     document.getElementById('switchNotice').style.display = 'none';
   }
 }
