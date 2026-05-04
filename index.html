@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -94,7 +93,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   </div>
 
   <!-- ROLE SELECTION -->
-
   <div class="sec active" id="secRoleSelect">
     <div class="card">
       <div class="card-title">Select Your Role</div>
@@ -112,9 +110,8 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   </div>
 
   <!-- ========== ADMIN INTERFACE ========== -->
-
+  
   <!-- ADMIN HOME -->
-
   <div class="sec" id="secAdminHome">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <h2 style="font-size:20px;font-weight:600;">Admin Dashboard</h2>
@@ -135,7 +132,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   </div>
 
   <!-- ADMIN CREATE -->
-
   <div class="sec" id="secAdminCreate">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <h2 style="font-size:20px;font-weight:600;">Create Tournament</h2>
@@ -166,7 +162,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   </div>
 
   <!-- ADMIN R1 LIVE -->
-
   <div class="sec" id="secAdminR1">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
       <div class="info-box" id="r1info" style="margin-bottom:0;flex:1;min-width:300px;"></div>
@@ -177,14 +172,12 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   </div>
 
   <!-- ADMIN R1 STANDINGS -->
-
   <div class="sec" id="secAdminR1Stand">
     <div id="r1sc"></div>
     <div class="actions"><button class="btn primary" onclick="genR2Pools()">Generate Round 2 pools →</button></div>
   </div>
 
   <!-- ADMIN R2 LIVE -->
-
   <div class="sec" id="secAdminR2">
     <div class="info-box" id="r2info"></div>
     <div id="r2PoolsAdmin"></div>
@@ -192,7 +185,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   </div>
 
   <!-- ADMIN FINAL -->
-
   <div class="sec" id="secAdminFinal">
     <div id="finalsc"></div>
     <div class="actions"><button class="btn primary" onclick="backAdminHome()">← Back to admin home</button></div>
@@ -201,7 +193,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   <!-- ========== USER INTERFACE ========== -->
 
   <!-- USER HOME -->
-
   <div class="sec" id="secUserHome">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <h2 style="font-size:20px;font-weight:600;">Tournaments</h2>
@@ -216,7 +207,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   </div>
 
   <!-- USER R1 -->
-
   <div class="sec" id="secUserR1">
     <div style="margin-bottom:1rem;"><button class="btn" onclick="backUserHome()">← Back</button></div>
     <div class="info-box" id="userR1info"></div>
@@ -224,7 +214,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   </div>
 
   <!-- USER R2 -->
-
   <div class="sec" id="secUserR2">
     <div style="margin-bottom:1rem;"><button class="btn" onclick="backUserHome()">← Back</button></div>
     <div class="info-box" id="userR2info"></div>
@@ -232,7 +221,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   </div>
 
   <!-- USER FINAL -->
-
   <div class="sec" id="secUserFinal">
     <div style="margin-bottom:1rem;"><button class="btn" onclick="backUserHome()">← Back</button></div>
     <div id="userFinalsc"></div>
@@ -240,7 +228,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
 </div>
 
 <!-- SCORING OVERLAY -->
-
 <div class="sitter-overlay" id="scoringOverlay">
   <div class="sitter-inner">
     <div class="sitter-header">
@@ -270,6 +257,60 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
 </div>
 
 <script type="module">
+// Define global functions BEFORE async Firebase init
+let role = null;
+let tournamentId = null;
+let players = [];
+let r1pools = [];
+let r2pools = [];
+let r1g = {};
+let r2g = {};
+
+window.selectAdmin = function() {
+  role = 'admin';
+  document.getElementById('secRoleSelect').classList.remove('active');
+  document.getElementById('secAdminHome').classList.add('active');
+  const adminActiveTabs = document.querySelectorAll('#secAdminHome .tab');
+  if(adminActiveTabs.length > 0) {
+    adminActiveTabs.forEach((t,i) => t.classList.toggle('active', i===0));
+  }
+  // Load active tournaments
+  loadAdminActive();
+};
+
+window.selectUser = function() {
+  role = 'user';
+  document.getElementById('secRoleSelect').classList.remove('active');
+  document.getElementById('secUserHome').classList.add('active');
+  const userActiveTabs = document.querySelectorAll('#secUserHome .tab');
+  if(userActiveTabs.length > 0) {
+    userActiveTabs.forEach((t,i) => t.classList.toggle('active', i===0));
+  }
+  // Load active tournaments
+  loadUserActive();
+};
+
+window.logout = function() {
+  role = null;
+  tournamentId = null;
+  players = [];
+  r1pools = [];
+  r2pools = [];
+  r1g = {};
+  r2g = {};
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+  document.getElementById('secRoleSelect').classList.add('active');
+};
+
+// Placeholder functions - will be populated by async init
+window.loadAdminActive = function() {};
+window.loadAdminPast = function() {};
+window.loadUserActive = function() {};
+window.loadUserPast = function() {};
+window.showAdminTab = function() {};
+window.showUserTab = function() {};
+
+// Now initialize Firebase and setup the rest
 (async () => {
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js");
   const { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, updateDoc, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js");
@@ -296,33 +337,6 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   let sitter = { pfx:null, k:null, s1:0, s2:0, ptTarget:15, ptCap:21 };
 
   function genTourId() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
-
-  /* ── ROLE SELECTION ── */
-  window.selectAdmin = function() {
-    role = 'admin';
-    document.getElementById('secRoleSelect').classList.remove('active');
-    document.getElementById('secAdminHome').classList.add('active');
-    showAdminTab('active');
-  };
-
-  window.selectUser = function() {
-    role = 'user';
-    document.getElementById('secRoleSelect').classList.remove('active');
-    document.getElementById('secUserHome').classList.add('active');
-    showUserTab('active');
-  };
-
-  window.logout = function() {
-    role = null;
-    tournamentId = null;
-    players = [];
-    r1pools = [];
-    r2pools = [];
-    r1g = {};
-    r2g = {};
-    document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
-    document.getElementById('secRoleSelect').classList.add('active');
-  };
 
   /* ── ADMIN: HOME ── */
   window.showAdminTab = function(which) {
@@ -1065,6 +1079,5 @@ tbody td{padding:9px 10px;border-bottom:1px solid #f5f4f0;}
   };
 })();
 </script>
-
 </body>
 </html>
