@@ -20,13 +20,16 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 .ptag { display: inline-block; background: #fee2e2; padding: 4px 8px; border-radius: 6px; margin: 3px; font-size: 12px; }
 .ptag .x { cursor: pointer; margin-left: 6px; color: #999; }
 .plist { padding: 8px; border: 1px dashed #ccc; border-radius: 6px; min-height: 40px; margin: 8px 0; }
-.tab-btn { padding: 8px 16px; margin-right: 8px; border: 1px solid #d5d4d0; background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
-.tab-btn.active { background: #dc2626; color: #fff; border-color: #dc2626; }
 .hidden { display: none; }
 .pool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+.success { color: #16a34a; padding: 12px; background: #f0fdf4; border-radius: 8px; margin: 8px 0; font-size: 13px; }
+.error { color: #dc2626; padding: 12px; background: #fee2e2; border-radius: 8px; margin: 8px 0; font-size: 13px; }
+.info { color: #0369a1; padding: 12px; background: #e0f2fe; border-radius: 8px; margin: 8px 0; font-size: 13px; }
 .score-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .score-table th, .score-table td { padding: 8px; text-align: left; border-bottom: 1px solid #f0efe9; }
 .score-table th { background: #faf9f7; font-weight: 600; color: #888; }
+.tab-btn { padding: 8px 16px; margin-right: 8px; border: 1px solid #d5d4d0; background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.tab-btn.active { background: #dc2626; color: #fff; border-color: #dc2626; }
 </style>
 </head>
 <body>
@@ -44,6 +47,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
         <button class="btn primary" onclick="showCreateTour()">+ New Tournament</button>
       </div>
     </div>
+    <div id="firebaseStatus"></div>
     <div id="tourList"></div>
   </div>
 
@@ -72,7 +76,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
         <div style="font-size: 12px; color: #888;" id="playerCount">0 players</div>
       </div>
       <button class="btn primary" onclick="createTournament()">Create Tournament</button>
-      <div id="createErr" style="color: #dc2626; margin-top: 8px; font-size: 12px;"></div>
+      <div id="createErr"></div>
     </div>
   </div>
 
@@ -107,10 +111,27 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
+  <div style="background: #fff; border-radius: 12px; padding: 2rem; max-width: 400px; width: 90%;">
+    <div style="font-size: 16px; font-weight: 600; margin-bottom: 1rem;">Delete Tournament?</div>
+    <div style="font-size: 13px; color: #666; margin-bottom: 1.5rem;">This will permanently delete the tournament and cannot be undone.</div>
+    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+      <button class="btn" onclick="cancelDelete()">Cancel</button>
+      <button class="btn primary" style="background: #dc2626;" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
 
 <script>
+let currentPlayers = [];
+let currentTourId = null;
+let db = null;
+let firebaseReady = false;
+
 const firebaseConfig = {
   apiKey: "AIzaSyBQAx2DK8mm7lyGTqaqhWYfTTTBc3DznUg",
   authDomain: "kob-tournament-d7241.firebaseapp.com",
@@ -120,11 +141,27 @@ const firebaseConfig = {
   appId: "1:147933432566:web:9f4377719d51b058b9fad7"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+// Initialize Firebase
+try {
+  console.log('Initializing Firebase...');
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  firebaseReady = true;
+  console.log('Firebase initialized successfully');
+  showFirebaseStatus('✓ Firebase connected');
+} catch (e) {
+  console.error('Firebase initialization error:', e);
+  showFirebaseStatus('⚠ Firebase connection issue - using local storage', 'error');
+}
 
-let currentPlayers = [];
-let currentTourId = null;
+function showFirebaseStatus(msg, type = 'success') {
+  const el = document.getElementById('firebaseStatus');
+  if (type === 'error') {
+    el.innerHTML = `<div class="info">${msg}</div>`;
+  } else {
+    el.innerHTML = `<div class="success">${msg}</div>`;
+  }
+}
 
 function showScreen(name) {
   document.getElementById('homeScreen').classList.toggle('hidden', name !== 'home');
@@ -142,7 +179,7 @@ function showCreateTour() {
   document.getElementById('tourName').value = '';
   document.getElementById('tourDate').value = '';
   document.getElementById('playerInput').value = '';
-  document.getElementById('createErr').textContent = '';
+  document.getElementById('createErr').innerHTML = '';
   updatePlayerList();
   showScreen('create');
 }
@@ -175,14 +212,15 @@ async function createTournament() {
   const name = document.getElementById('tourName').value.trim();
   const dateInput = document.getElementById('tourDate').value;
   
-  document.getElementById('createErr').textContent = '';
+  const errEl = document.getElementById('createErr');
+  errEl.innerHTML = '';
   
   if (!name || !dateInput) {
-    document.getElementById('createErr').textContent = 'Fill in all fields';
+    errEl.innerHTML = '<div class="error">Fill in all fields</div>';
     return;
   }
   if (currentPlayers.length < 4) {
-    document.getElementById('createErr').textContent = 'Add at least 4 players';
+    errEl.innerHTML = '<div class="error">Add at least 4 players</div>';
     return;
   }
 
@@ -195,26 +233,38 @@ async function createTournament() {
   
   try {
     console.log('Creating tournament:', tourId, currentPlayers);
-    await db.collection('tournaments').doc(tourId).set({
-      id: tourId,
-      name: name,
-      date: date,
-      dateTime: dateInput,
-      players: currentPlayers,
-      playerCount: currentPlayers.length,
-      createdAt: new Date(),
-      status: 'setup'
-    });
-    console.log('Tournament created successfully');
-    showHome();
+    
+    if (firebaseReady && db) {
+      await db.collection('tournaments').doc(tourId).set({
+        id: tourId,
+        name: name,
+        date: date,
+        dateTime: dateInput,
+        players: currentPlayers,
+        playerCount: currentPlayers.length,
+        createdAt: new Date(),
+        status: 'setup'
+      });
+      console.log('Tournament created in Firebase');
+    } else {
+      throw new Error('Firebase not available');
+    }
+    
+    errEl.innerHTML = '<div class="success">✓ Tournament created!</div>';
+    setTimeout(() => showHome(), 1500);
   } catch (e) {
     console.error('Error creating tournament:', e);
-    document.getElementById('createErr').textContent = 'Error: ' + e.message;
+    errEl.innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
 }
 
 async function loadTournaments() {
   try {
+    if (!firebaseReady || !db) {
+      document.getElementById('tourList').innerHTML = '<div class="info">Firebase not connected. Please refresh the page.</div>';
+      return;
+    }
+
     const snap = await db.collection('tournaments').get();
     let html = '';
     snap.forEach(doc => {
@@ -231,24 +281,31 @@ async function loadTournaments() {
         </div>
       `;
     });
-    if (!html) html = '<div class="card"><p style="text-align: center; color: #aaa;">No tournaments yet</p></div>';
+    if (!html) html = '<div class="card"><p style="text-align: center; color: #aaa;">No tournaments - click "+ New Tournament" to create one</p></div>';
     document.getElementById('tourList').innerHTML = html;
   } catch (e) {
-    console.error(e);
+    console.error('Error loading tournaments:', e);
+    document.getElementById('tourList').innerHTML = '<div class="error">Error loading tournaments: ' + e.message + '</div>';
   }
 }
 
 async function openTour(tourId) {
   currentTourId = tourId;
-  const doc = await db.collection('tournaments').doc(tourId).get();
-  const data = doc.data();
-  document.getElementById('detailTitle').textContent = data.name;
-  showScreen('detail');
-  loadScores();
+  try {
+    if (!firebaseReady || !db) return;
+    const doc = await db.collection('tournaments').doc(tourId).get();
+    const data = doc.data();
+    document.getElementById('detailTitle').textContent = data.name + ' (' + data.playerCount + ' players)';
+    showScreen('detail');
+    loadScores();
+  } catch (e) {
+    console.error('Error opening tournament:', e);
+  }
 }
 
 async function loadScores() {
   try {
+    if (!firebaseReady || !db) return;
     const snap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
     let html = '';
     snap.forEach(doc => {
@@ -266,7 +323,7 @@ async function loadScores() {
     if (!html) html = '<tr><td colspan="4" style="text-align: center; color: #aaa;">No scores yet</td></tr>';
     document.getElementById('scoresList').innerHTML = html;
   } catch (e) {
-    console.error(e);
+    console.error('Error loading scores:', e);
   }
 }
 
@@ -289,46 +346,60 @@ function shuffle(arr) {
 }
 
 async function generatePools() {
-  const doc = await db.collection('tournaments').doc(currentTourId).get();
-  const players = doc.data().players;
-  const pools = [];
-  const shuffled = shuffle(players);
-  const maxPoolSize = 5;
-  const numPools = Math.ceil(players.length / maxPoolSize);
-  
-  for (let i = 0; i < numPools; i++) {
-    pools.push([]);
+  try {
+    if (!firebaseReady || !db) return;
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const players = doc.data().players;
+    const pools = [];
+    const shuffled = shuffle(players);
+    const maxPoolSize = 5;
+    const numPools = Math.ceil(players.length / maxPoolSize);
+    
+    for (let i = 0; i < numPools; i++) {
+      pools.push([]);
+    }
+    shuffled.forEach((p, i) => pools[i % numPools].push(p));
+    
+    await db.collection('tournaments').doc(currentTourId).update({
+      pools: pools,
+      status: 'pools_created'
+    });
+    
+    loadPools();
+  } catch (e) {
+    console.error('Error generating pools:', e);
   }
-  shuffled.forEach((p, i) => pools[i % numPools].push(p));
-  
-  await db.collection('tournaments').doc(currentTourId).update({
-    pools: pools,
-    status: 'pools_created'
-  });
-  
-  loadPools();
 }
 
 async function loadPools() {
-  const doc = await db.collection('tournaments').doc(currentTourId).get();
-  const pools = doc.data().pools || [];
-  
-  let html = '';
-  pools.forEach((pool, i) => {
-    html += `
-      <div class="card">
-        <div style="font-weight: 600; margin-bottom: 8px;">Pool ${String.fromCharCode(65 + i)}</div>
-        <div style="font-size: 12px; color: #666; line-height: 1.6;">
-          ${pool.map((p, j) => `${j + 1}. ${p}`).join('<br/>')}
-        </div>
-      </div>
-    `;
-  });
-  
-  document.getElementById('poolsList').innerHTML = html || '<p style="color: #aaa;">No pools yet</p>';
+  try {
+    if (!firebaseReady || !db) return;
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const pools = doc.data().pools || [];
+    
+    let html = '';
+    if (pools.length === 0) {
+      html = '<p style="color: #aaa;">No pools yet - click "Generate Pools" to create them</p>';
+    } else {
+      pools.forEach((pool, i) => {
+        html += `
+          <div class="card">
+            <div style="font-weight: 600; margin-bottom: 8px;">Pool ${String.fromCharCode(65 + i)} (${pool.length} players)</div>
+            <div style="font-size: 12px; color: #666; line-height: 1.8;">
+              ${pool.map((p, j) => `${j + 1}. ${p}`).join('<br/>')}
+            </div>
+          </div>
+        `;
+      });
+    }
+    
+    document.getElementById('poolsList').innerHTML = html;
+  } catch (e) {
+    console.error('Error loading pools:', e);
+  }
 }
 
-// Load on startup - wait for Firebase to initialize
+// Load on startup
 setTimeout(() => {
   console.log('Loading tournaments...');
   loadTournaments();
