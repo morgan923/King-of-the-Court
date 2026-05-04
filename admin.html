@@ -149,10 +149,12 @@ function showCreateTour() {
 
 function addPlayer() {
   const name = document.getElementById('playerInput').value.trim();
+  console.log('Adding player:', name);
   if (name && !currentPlayers.includes(name)) {
     currentPlayers.push(name);
     document.getElementById('playerInput').value = '';
     updatePlayerList();
+    console.log('Players now:', currentPlayers);
   }
 }
 
@@ -173,6 +175,8 @@ async function createTournament() {
   const name = document.getElementById('tourName').value.trim();
   const date = document.getElementById('tourDate').value.trim();
   
+  document.getElementById('createErr').textContent = '';
+  
   if (!name || !date) {
     document.getElementById('createErr').textContent = 'Fill in all fields';
     return;
@@ -185,6 +189,7 @@ async function createTournament() {
   const tourId = Math.random().toString(36).substring(2, 8).toUpperCase();
   
   try {
+    console.log('Creating tournament:', tourId, currentPlayers);
     await db.collection('tournaments').doc(tourId).set({
       id: tourId,
       name: name,
@@ -194,8 +199,10 @@ async function createTournament() {
       createdAt: new Date(),
       status: 'setup'
     });
+    console.log('Tournament created successfully');
     showHome();
   } catch (e) {
+    console.error('Error creating tournament:', e);
     document.getElementById('createErr').textContent = 'Error: ' + e.message;
   }
 }
@@ -315,8 +322,11 @@ async function loadPools() {
   document.getElementById('poolsList').innerHTML = html || '<p style="color: #aaa;">No pools yet</p>';
 }
 
-// Load on startup
-loadTournaments();
+// Load on startup - wait for Firebase to initialize
+setTimeout(() => {
+  console.log('Loading tournaments...');
+  loadTournaments();
+}, 500);
 </script>
 </body>
 </html>
