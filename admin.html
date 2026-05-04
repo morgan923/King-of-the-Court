@@ -366,8 +366,11 @@ async function generatePools() {
     
     console.log('Pools created:', pools);
 
+    // Convert pools to JSON string because Firebase doesn't support nested arrays
+    const poolsJson = JSON.stringify(pools);
+
     await db.collection('tournaments').doc(currentTourId).update({
-      pools: pools,
+      poolsJson: poolsJson,
       status: 'pools_created'
     });
     
@@ -401,7 +404,12 @@ async function loadPools() {
       return;
     }
 
-    const pools = doc.data().pools || [];
+    // Parse pools from JSON string
+    const poolsJson = doc.data().poolsJson;
+    let pools = [];
+    if (poolsJson) {
+      pools = JSON.parse(poolsJson);
+    }
     console.log('Pools from Firebase:', pools);
     
     let html = '';
