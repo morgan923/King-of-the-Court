@@ -226,13 +226,26 @@ async function loadGames() {
       games.push({ id: 'g5', t1: [pool[2], pool[4]], t2: [pool[3], pool[1]] });
     }
     
+    // Get all submitted scores
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    const scores = {};
+    scoresSnap.forEach(doc => {
+      scores[doc.id] = doc.data();
+    });
+    
+    console.log('Scores:', scores);
+    
     let html = '';
     games.forEach(game => {
+      const score = scores[game.id];
+      const scoreStr = score ? `${score.s1} - ${score.s2}` : '–';
+      const scoreColor = score ? '#16a34a' : '#aaa';
+      
       html += `
-        <div class="game-card" onclick="openScoring('${game.id}', '${game.t1.join(' & ')}', '${game.t2.join(' & ')}')">
+        <div class="game-card" onclick="openScoring('${game.id}', '${game.t1.join(' & ')}', '${game.t2.join(' & ')}', ${score ? score.s1 : 0}, ${score ? score.s2 : 0})" style="${score ? 'background: #f0fdf4; border-color: #16a34a;' : ''}">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="flex: 1; font-size: 13px; font-weight: 500;">${game.t1.join(' & ')}</div>
-            <div style="font-weight: 600; color: #1a56db; min-width: 40px; text-align: center;">–</div>
+            <div style="font-weight: 600; color: ${scoreColor}; min-width: 40px; text-align: center;">${scoreStr}</div>
             <div style="flex: 1; text-align: right; font-size: 13px; font-weight: 500;">${game.t2.join(' & ')}</div>
           </div>
         </div>
@@ -240,22 +253,39 @@ async function loadGames() {
     });
     
     document.getElementById('gamesList').innerHTML = html;
+    
+    // Listen for real-time score updates
+    listenToScores();
   } catch (e) {
     console.error('Error:', e);
     document.getElementById('gamesList').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
 }
 
-function openScoring(gameId, team1, team2) {
+function listenToScores() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    console.log('Starting to listen for score updates...');
+    db.collection('tournaments').doc(currentTourId).collection('scores').onSnapshot((snap) => {
+      console.log('Score update received');
+      loadGames();
+    });
+  } catch (e) {
+    console.error('Error listening to scores:', e);
+  }
+}
+
+function openScoring(gameId, team1, team2, s1 = 0, s2 = 0) {
   currentGameId = gameId;
   currentGame = { team1, team2 };
-  currentScore = { s1: 0, s2: 0 };
+  currentScore = { s1: s1, s2: s2 };
   
   document.getElementById('gameTitle').textContent = `${team1} vs ${team2}`;
   document.getElementById('team1Name').textContent = team1;
   document.getElementById('team2Name').textContent = team2;
-  document.getElementById('score1').textContent = '0';
-  document.getElementById('score2').textContent = '0';
+  document.getElementById('score1').textContent = s1;
+  document.getElementById('score2').textContent = s2;
   
   updateTeamStyles();
   updateSubmitButton();
