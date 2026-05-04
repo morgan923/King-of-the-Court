@@ -111,20 +111,9 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100;">
-  <div style="background: #fff; border-radius: 12px; padding: 2rem; max-width: 400px; width: 90%;">
-    <div style="font-size: 16px; font-weight: 600; margin-bottom: 1rem;">Delete Tournament?</div>
-    <div style="font-size: 13px; color: #666; margin-bottom: 1.5rem;">This will permanently delete the tournament and cannot be undone.</div>
-    <div style="display: flex; gap: 8px; justify-content: flex-end;">
-      <button class="btn" onclick="cancelDelete()">Cancel</button>
-      <button class="btn primary" style="background: #dc2626;" onclick="confirmDelete()">Delete</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+<!-- Firebase Scripts (load synchronously) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
 let currentPlayers = [];
@@ -142,24 +131,18 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-try {
-  console.log('Initializing Firebase...');
-  firebase.initializeApp(firebaseConfig);
-  db = firebase.firestore();
-  firebaseReady = true;
-  console.log('Firebase initialized successfully');
-  showFirebaseStatus('✓ Firebase connected');
-} catch (e) {
-  console.error('Firebase initialization error:', e);
-  showFirebaseStatus('⚠ Firebase connection issue - using local storage', 'error');
-}
-
-function showFirebaseStatus(msg, type = 'success') {
-  const el = document.getElementById('firebaseStatus');
-  if (type === 'error') {
-    el.innerHTML = `<div class="info">${msg}</div>`;
-  } else {
-    el.innerHTML = `<div class="success">${msg}</div>`;
+function initFirebase() {
+  try {
+    console.log('Initializing Firebase...');
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseReady = true;
+    console.log('Firebase initialized successfully');
+    document.getElementById('firebaseStatus').innerHTML = '<div class="success">✓ Firebase connected</div>';
+  } catch (e) {
+    console.error('Firebase error:', e);
+    firebaseReady = false;
+    document.getElementById('firebaseStatus').innerHTML = '<div class="error">❌ Firebase error: ' + e.message + '</div>';
   }
 }
 
@@ -186,12 +169,10 @@ function showCreateTour() {
 
 function addPlayer() {
   const name = document.getElementById('playerInput').value.trim();
-  console.log('Adding player:', name);
   if (name && !currentPlayers.includes(name)) {
     currentPlayers.push(name);
     document.getElementById('playerInput').value = '';
     updatePlayerList();
-    console.log('Players now:', currentPlayers);
   }
 }
 
@@ -224,7 +205,6 @@ async function createTournament() {
     return;
   }
 
-  // Format date nicely
   const dateObj = new Date(dateInput);
   const date = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' at ' + 
                dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -232,28 +212,26 @@ async function createTournament() {
   const tourId = Math.random().toString(36).substring(2, 8).toUpperCase();
   
   try {
-    console.log('Creating tournament:', tourId, currentPlayers);
-    
-    if (firebaseReady && db) {
-      await db.collection('tournaments').doc(tourId).set({
-        id: tourId,
-        name: name,
-        date: date,
-        dateTime: dateInput,
-        players: currentPlayers,
-        playerCount: currentPlayers.length,
-        createdAt: new Date(),
-        status: 'setup'
-      });
-      console.log('Tournament created in Firebase');
-    } else {
-      throw new Error('Firebase not available');
+    if (!firebaseReady || !db) {
+      errEl.innerHTML = '<div class="error">Firebase not connected</div>';
+      return;
     }
+
+    await db.collection('tournaments').doc(tourId).set({
+      id: tourId,
+      name: name,
+      date: date,
+      dateTime: dateInput,
+      players: currentPlayers,
+      playerCount: currentPlayers.length,
+      createdAt: new Date(),
+      status: 'setup'
+    });
     
-    errEl.innerHTML = '<div class="success">✓ Tournament created!</div>';
+    errEl.innerHTML = '<div class="success">✓ Tournament created! ID: ' + tourId + '</div>';
     setTimeout(() => showHome(), 1500);
   } catch (e) {
-    console.error('Error creating tournament:', e);
+    console.error('Error:', e);
     errEl.innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
 }
@@ -261,7 +239,7 @@ async function createTournament() {
 async function loadTournaments() {
   try {
     if (!firebaseReady || !db) {
-      document.getElementById('tourList').innerHTML = '<div class="info">Firebase not connected. Please refresh the page.</div>';
+      document.getElementById('tourList').innerHTML = '<div class="error">Firebase not ready</div>';
       return;
     }
 
@@ -281,11 +259,11 @@ async function loadTournaments() {
         </div>
       `;
     });
-    if (!html) html = '<div class="card"><p style="text-align: center; color: #aaa;">No tournaments - click "+ New Tournament" to create one</p></div>';
+    if (!html) html = '<div class="card"><p style="text-align: center; color: #aaa;">No tournaments yet</p></div>';
     document.getElementById('tourList').innerHTML = html;
   } catch (e) {
-    console.error('Error loading tournaments:', e);
-    document.getElementById('tourList').innerHTML = '<div class="error">Error loading tournaments: ' + e.message + '</div>';
+    console.error('Error:', e);
+    document.getElementById('tourList').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
 }
 
@@ -299,7 +277,7 @@ async function openTour(tourId) {
     showScreen('detail');
     loadScores();
   } catch (e) {
-    console.error('Error opening tournament:', e);
+    console.error('Error:', e);
   }
 }
 
@@ -323,7 +301,7 @@ async function loadScores() {
     if (!html) html = '<tr><td colspan="4" style="text-align: center; color: #aaa;">No scores yet</td></tr>';
     document.getElementById('scoresList').innerHTML = html;
   } catch (e) {
-    console.error('Error loading scores:', e);
+    console.error('Error:', e);
   }
 }
 
@@ -367,7 +345,7 @@ async function generatePools() {
     
     loadPools();
   } catch (e) {
-    console.error('Error generating pools:', e);
+    console.error('Error:', e);
   }
 }
 
@@ -379,7 +357,7 @@ async function loadPools() {
     
     let html = '';
     if (pools.length === 0) {
-      html = '<p style="color: #aaa;">No pools yet - click "Generate Pools" to create them</p>';
+      html = '<p style="color: #aaa;">No pools yet - click "Generate Pools"</p>';
     } else {
       pools.forEach((pool, i) => {
         html += `
@@ -395,15 +373,15 @@ async function loadPools() {
     
     document.getElementById('poolsList').innerHTML = html;
   } catch (e) {
-    console.error('Error loading pools:', e);
+    console.error('Error:', e);
   }
 }
 
-// Load on startup
-setTimeout(() => {
-  console.log('Loading tournaments...');
+// Initialize Firebase when page loads
+window.addEventListener('load', () => {
+  initFirebase();
   loadTournaments();
-}, 500);
+});
 </script>
 </body>
 </html>
