@@ -325,35 +325,83 @@ function shuffle(arr) {
 
 async function generatePools() {
   try {
-    if (!firebaseReady || !db) return;
+    if (!firebaseReady || !db) {
+      alert('Firebase not ready');
+      return;
+    }
+    
+    if (!currentTourId) {
+      alert('No tournament selected');
+      return;
+    }
+
+    console.log('Generating pools for:', currentTourId);
     const doc = await db.collection('tournaments').doc(currentTourId).get();
-    const players = doc.data().players;
+    
+    if (!doc.exists()) {
+      alert('Tournament not found');
+      return;
+    }
+
+    const data = doc.data();
+    console.log('Tournament data:', data);
+    
+    const players = data.players;
+    if (!players || players.length === 0) {
+      alert('No players in tournament');
+      return;
+    }
+
     const pools = [];
     const shuffled = shuffle(players);
     const maxPoolSize = 5;
     const numPools = Math.ceil(players.length / maxPoolSize);
+    
+    console.log('Creating', numPools, 'pools');
     
     for (let i = 0; i < numPools; i++) {
       pools.push([]);
     }
     shuffled.forEach((p, i) => pools[i % numPools].push(p));
     
+    console.log('Pools created:', pools);
+
     await db.collection('tournaments').doc(currentTourId).update({
       pools: pools,
       status: 'pools_created'
     });
     
+    console.log('Pools saved to Firebase');
     loadPools();
   } catch (e) {
-    console.error('Error:', e);
+    console.error('Error generating pools:', e);
+    alert('Error generating pools: ' + e.message);
   }
 }
 
 async function loadPools() {
   try {
-    if (!firebaseReady || !db) return;
+    if (!firebaseReady || !db) {
+      console.error('Firebase not ready');
+      return;
+    }
+    
+    if (!currentTourId) {
+      console.error('No tournament ID');
+      return;
+    }
+
+    console.log('Loading pools for:', currentTourId);
     const doc = await db.collection('tournaments').doc(currentTourId).get();
+    
+    if (!doc.exists()) {
+      console.error('Tournament not found');
+      document.getElementById('poolsList').innerHTML = '<p style="color: #aaa;">Tournament not found</p>';
+      return;
+    }
+
     const pools = doc.data().pools || [];
+    console.log('Pools from Firebase:', pools);
     
     let html = '';
     if (pools.length === 0) {
@@ -373,7 +421,8 @@ async function loadPools() {
     
     document.getElementById('poolsList').innerHTML = html;
   } catch (e) {
-    console.error('Error:', e);
+    console.error('Error loading pools:', e);
+    document.getElementById('poolsList').innerHTML = '<p style="color: #dc2626;">Error: ' + e.message + '</p>';
   }
 }
 
