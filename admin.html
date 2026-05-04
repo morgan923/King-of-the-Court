@@ -338,7 +338,7 @@ async function generatePools() {
     console.log('Generating pools for:', currentTourId);
     const doc = await db.collection('tournaments').doc(currentTourId).get();
     
-    if (!doc.exists()) {
+    if (!doc.data()) {
       alert('Tournament not found');
       return;
     }
@@ -372,6 +372,7 @@ async function generatePools() {
     });
     
     console.log('Pools saved to Firebase');
+    alert('✓ Pools generated!');
     loadPools();
   } catch (e) {
     console.error('Error generating pools:', e);
@@ -394,7 +395,7 @@ async function loadPools() {
     console.log('Loading pools for:', currentTourId);
     const doc = await db.collection('tournaments').doc(currentTourId).get();
     
-    if (!doc.exists()) {
+    if (!doc.data()) {
       console.error('Tournament not found');
       document.getElementById('poolsList').innerHTML = '<p style="color: #aaa;">Tournament not found</p>';
       return;
