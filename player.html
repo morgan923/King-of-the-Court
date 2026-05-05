@@ -109,6 +109,9 @@ let currentGameId = null;
 let currentScore = { s1: 0, s2: 0 };
 let currentGame = null;
 
+// Track which round we're viewing
+window.currentRound = 1;
+
 const firebaseConfig = {
   apiKey: "AIzaSyBQAx2DK8mm7lyGTqaqhWYfTTTBc3DznUg",
   authDomain: "kob-tournament-d7241.firebaseapp.com",
@@ -219,7 +222,28 @@ async function loadGames() {
       return;
     }
     
-    const pool = pools[0]; // Show first pool
+    // Check if Round 2 is available
+    let r2pools = null;
+    if (data.r2poolsJson) {
+      r2pools = JSON.parse(data.r2poolsJson);
+    }
+    
+    // Add round selector if Round 2 exists
+    let roundHtml = '';
+    if (r2pools) {
+      roundHtml = `
+        <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
+          <button class="tab-btn active" onclick="switchRound(1)">Round 1</button>
+          <button class="tab-btn" onclick="switchRound(2)">Round 2</button>
+        </div>
+      `;
+      document.getElementById('gamesList').innerHTML = roundHtml;
+    }
+    
+    // Use Round 2 pools if that's the current round, otherwise use Round 1
+    const activePools = r2pools && window.currentRound === 2 ? r2pools : pools;
+    
+    const pool = activePools[0]; // Show first pool
     const games = [
       { id: 'g1', t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
       { id: 'g2', t1: [pool[0], pool[2]], t2: [pool[1], pool[3]] },
@@ -279,6 +303,14 @@ function listenToScores() {
   } catch (e) {
     console.error('Error listening to scores:', e);
   }
+}
+
+function switchRound(round) {
+  window.currentRound = round;
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', (i === 0 && round === 1) || (i === 1 && round === 2));
+  });
+  loadGames();
 }
 
 function openScoring(gameId, team1, team2, s1 = 0, s2 = 0) {
