@@ -593,8 +593,14 @@ async function generateRound2() {
       status: 'round2'
     });
 
+    console.log('Round 2 saved to Firebase');
     alert('✓ Round 2 pools generated!');
-    loadRound2Pools();
+    
+    // Wait a moment for Firebase to sync, then refresh
+    setTimeout(() => {
+      loadRound2Pools();
+      loadPools();
+    }, 500);
   } catch (e) {
     console.error('Error generating Round 2:', e);
     alert('Error: ' + e.message);
@@ -603,16 +609,28 @@ async function generateRound2() {
 
 async function loadRound2Pools() {
   try {
-    if (!firebaseReady || !db) return;
+    if (!firebaseReady || !db) {
+      console.error('Firebase not ready');
+      return;
+    }
+    
+    if (!currentTourId) {
+      console.error('No tournament ID');
+      return;
+    }
     
     const doc = await db.collection('tournaments').doc(currentTourId).get();
-    const r2poolsJson = doc.data().r2poolsJson;
+    const data = doc.data();
+    const r2poolsJson = data ? data.r2poolsJson : null;
+    
+    console.log('R2 Pools JSON:', r2poolsJson);
     
     let html = '';
     if (!r2poolsJson) {
       html = '<p style="color: #aaa;">No Round 2 pools yet</p>';
     } else {
       const r2pools = JSON.parse(r2poolsJson);
+      console.log('Parsed R2 pools:', r2pools);
       r2pools.forEach((pool, i) => {
         html += `
           <div class="card">
@@ -627,7 +645,8 @@ async function loadRound2Pools() {
     
     document.getElementById('round2PoolsList').innerHTML = html;
   } catch (e) {
-    console.error('Error:', e);
+    console.error('Error loading Round 2 pools:', e);
+    document.getElementById('round2PoolsList').innerHTML = '<p style="color: #dc2626;">Error: ' + e.message + '</p>';
   }
 }
 
