@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -96,9 +95,14 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 
       <!-- Scores Tab -->
       <div id="scoresTab">
+        <div style="margin-bottom: 1rem; display: flex; gap: 8px;">
+          <button class="btn primary" onclick="finalizeRound()" id="finalizeBtn">Finalize Round 1</button>
+          <div style="flex: 1;"></div>
+          <span style="font-size: 12px; color: #888; align-self: center;" id="roundStatus">Round 1 - Active</span>
+        </div>
         <table class="score-table">
           <thead>
-            <tr><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
+            <tr><th>Round</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
           </thead>
           <tbody id="scoresList"></tbody>
         </table>
@@ -125,7 +129,6 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
           <div id="r1RankingsTable"></div>
           
           <div style="margin-top: 1.5rem; margin-bottom: 1rem; display: flex; gap: 8px;">
-            <button class="btn primary" onclick="generateRound2()">Generate Round 2 Pools</button>
             <button class="btn" style="background: #fee2e2; color: #dc2626;" onclick="resetRound2()">Reset R2</button>
           </div>
           <div class="pool-grid" id="round2PoolsList"></div>
@@ -308,13 +311,33 @@ async function openTour(tourId) {
 async function loadScores() {
   try {
     if (!firebaseReady || !db) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const status = doc.data().status;
+    const currentRound = status === 'round2' ? 2 : 1;
+    
+    // Update finalize button and status
+    const finalizeBtn = document.getElementById('finalizeBtn');
+    const roundStatus = document.getElementById('roundStatus');
+    
+    if (currentRound === 1) {
+      finalizeBtn.style.display = 'block';
+      finalizeBtn.textContent = 'Finalize Round 1';
+      roundStatus.textContent = 'Round 1 - Active';
+    } else {
+      finalizeBtn.style.display = 'none';
+      roundStatus.textContent = 'Round 2 - Active';
+    }
+    
     const snap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
     let html = '';
     snap.forEach(doc => {
       const data = doc.data();
       const time = data.submittedAt ? new Date(data.submittedAt.toDate()).toLocaleTimeString() : '—';
+      const round = data.round || 1; // Default to round 1 if not set
       html += `
         <tr>
+          <td style="font-weight: 600;">R${round}</td>
           <td>${data.t1 ? data.t1.join(' & ') : '—'}</td>
           <td style="font-weight: 600;">${data.s1 || 0} - ${data.s2 || 0}</td>
           <td>${data.t2 ? data.t2.join(' & ') : '—'}</td>
@@ -322,7 +345,7 @@ async function loadScores() {
         </tr>
       `;
     });
-    if (!html) html = '<tr><td colspan="4" style="text-align: center; color: #aaa;">No scores yet</td></tr>';
+    if (!html) html = '<tr><td colspan="5" style="text-align: center; color: #aaa;">No scores yet</td></tr>';
     document.getElementById('scoresList').innerHTML = html;
   } catch (e) {
     console.error('Error:', e);
@@ -344,6 +367,107 @@ function showTab(tab) {
   if (tab === 'pools') {
     loadPools();
     loadRankings(); // Also load rankings for R2 generation
+  }
+}
+
+async function finalizeRound() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) {
+      alert('Error: Firebase not ready');
+      return;
+    }
+
+    const result = confirm('Finalize Round 1? This will lock scores and show final rankings.');
+    if (!result) return;
+
+    // Get current tournament
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    
+    // Calculate final rankings for R1
+    const players = data.players || [];
+    const playerStats = {};
+    players.forEach(p => {
+      playerStats[p] = { wins: 0, losses: 0, pf: 0, pa: 0 };
+    });
+
+    // Get all R1 scores
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    scoresSnap.forEach(scoreDoc => {
+      const score = scoreDoc.data();
+      const round = score.round || 1;
+      
+      if (round === 1 && score.t1 && score.t2) {
+        score.t1.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s1;
+            playerStats[p].pa += score.s2;
+            if (score.s1 > score.s2) playerStats[p].wins++;
+            else if (score.s1 < score.s2) playerStats[p].losses++;
+          }
+        });
+        
+        score.t2.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s2;
+            playerStats[p].pa += score.s1;
+            if (score.s2 > score.s1) playerStats[p].wins++;
+            else if (score.s2 < score.s1) playerStats[p].losses++;
+          }
+        });
+      }
+    });
+
+    // Check if pools are even sized
+    const poolsJson = data.poolsJson;
+    const pools = JSON.parse(poolsJson);
+    const poolSizes = [...new Set(pools.map(p => p.length))];
+    const isEven = poolSizes.length === 1;
+
+    // Rank players
+    const ranked = players.map(p => ({
+      name: p,
+      ...playerStats[p],
+      diff: playerStats[p].pf - playerStats[p].pa
+    }));
+
+    if (isEven) {
+      ranked.sort((a, b) => {
+        if (a.wins !== b.wins) return b.wins - a.wins;
+        if (a.losses !== b.losses) return a.losses - b.losses;
+        return b.diff - a.diff;
+      });
+    } else {
+      ranked.sort((a, b) => b.diff - a.diff);
+    }
+
+    // Display standings
+    let standingsHtml = '<table class="score-table"><thead><tr><th>#</th><th>Player</th>';
+    if (isEven) {
+      standingsHtml += '<th>W</th><th>L</th>';
+    }
+    standingsHtml += '<th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>';
+    
+    ranked.forEach((r, i) => {
+      standingsHtml += `<tr><td>${i + 1}</td><td style="font-weight: 600;">${r.name}</td>`;
+      if (isEven) {
+        standingsHtml += `<td>${r.wins}W</td><td>${r.losses}L</td>`;
+      }
+      standingsHtml += `<td>${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+    });
+    
+    standingsHtml += '</tbody></table>';
+    standingsHtml += '<div style="margin-top: 1rem;"><button class="btn primary" onclick="generateRound2FromRankings()">Generate Round 2 Pools & Post to Players</button></div>';
+    
+    document.getElementById('r1RankingsTable').innerHTML = standingsHtml;
+    
+    // Switch to pools tab to show rankings
+    showTab('pools');
+    
+    alert('✓ Round 1 Finalized! Rankings shown below.');
+  } catch (e) {
+    console.error('Error finalizing round:', e);
+    alert('Error: ' + e.message);
   }
 }
 
