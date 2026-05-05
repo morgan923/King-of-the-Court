@@ -102,9 +102,10 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   <div id="scoresTab">
     <div id="gameStatusSection"></div>
     <div style="margin-bottom: 1rem; display: flex; gap: 8px; align-items: center;" id="finalizeSection" style="display: none;">
-      <button class="btn primary" id="r1FinalizeBtn" onclick="finalizeRound()">Finalize Round 1</button>
-      <span style="font-size: 12px; color: #16a34a; font-weight: 600;">✓ All games complete</span>
+      <button class="btn primary" id="r1FinalizeBtn" onclick="finalizeRound()">Finalize Round 1 & Generate Round 2</button>
+      <span style="font-size: 12px; color: #16a34a; font-weight: 600;">✓ All Round 1 games complete</span>
     </div>
+    <div id="round2StatusSection"></div>
     <table class="score-table">
       <thead>
         <tr><th>Round</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
@@ -125,20 +126,11 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 
   <!-- Pools Tab -->
   <div id="poolsTab" class="hidden">
-    <button class="btn primary" onclick="generatePools()" style="margin-bottom: 1rem;">Generate Pools</button>
-    <div class="pool-grid" id="poolsList"></div>
+    <button class="btn primary" onclick="generatePools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
+    <div id="r1PoolsList" class="pool-grid"></div>
     
-    <!-- Round 2 Section -->
-    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0efe9;">
-      <div class="card-title" style="margin-bottom: 1rem;">Round 1 Final Rankings</div>
-      <button class="btn primary" id="r1FinalizeBtn" onclick="finalizeRound()" style="margin-bottom: 1rem;">Finalize Round 1</button>
-      <div id="r1RankingsTable"></div>
-      
-      <div style="margin-top: 1.5rem; margin-bottom: 1rem; display: flex; gap: 8px;">
-        <button class="btn" style="background: #fee2e2; color: #dc2626;" onclick="resetRound2()">Reset R2</button>
-      </div>
-      <div class="pool-grid" id="round2PoolsList"></div>
-    </div>
+    <!-- Round 2 Pools -->
+    <div id="r2PoolsSection"></div>
   </div>
 </div>
 ```
@@ -396,15 +388,15 @@ async function loadScores() {
       }
     });
 
-    // Build pool status HTML
-    let poolStatusHtml = '';
+    // Build R1 pool status HTML
+    let poolStatusHtml = '<div style="margin-bottom: 1.5rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 12px; background: #fef2f2; border-left: 4px solid #dc2626;">Round 1 - Pool Status</div>';
     let allGamesComplete = true;
     
     Object.keys(poolGames).sort().forEach(poolLetter => {
       const games = poolGames[poolLetter];
       let completedGames = 0;
       
-      poolStatusHtml += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #dc2626;">`;
+      poolStatusHtml += `<div style="margin-bottom: 1rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #dc2626;">`;
       poolStatusHtml += `<div style="font-weight: 600; margin-bottom: 0.5rem;">Pool ${poolLetter}</div>`;
       poolStatusHtml += `<div style="font-size: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px;">`;
       
@@ -434,14 +426,35 @@ async function loadScores() {
       poolStatusHtml += `</div>`;
     });
     
+    poolStatusHtml += '</div>';
     document.getElementById('gameStatusSection').innerHTML = poolStatusHtml;
     
-    // Show/hide finalize button based on completion
+    // Show/hide finalize button based on R1 completion
     const finalizeSection = document.getElementById('finalizeSection');
     if (allGamesComplete && pools.length > 0) {
       finalizeSection.style.display = 'flex';
     } else {
       finalizeSection.style.display = 'none';
+    }
+    
+    // Check if R2 exists and show R2 pool status
+    const r2poolsJson = data.r2poolsJson;
+    if (r2poolsJson) {
+      const r2pools = JSON.parse(r2poolsJson);
+      let r2StatusHtml = '<div style="margin-bottom: 1.5rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 12px; background: #f0fdf4; border-left: 4px solid #16a34a;">Round 2 - Pool Status</div>';
+      
+      r2pools.forEach((pool, idx) => {
+        const poolLetter = String.fromCharCode(65 + idx);
+        r2StatusHtml += `<div style="margin-bottom: 1rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #16a34a;">`;
+        r2StatusHtml += `<div style="font-weight: 600; margin-bottom: 0.5rem;">Pool ${poolLetter}</div>`;
+        r2StatusHtml += `<div style="font-size: 12px; color: #666;">${pool.join(', ')}</div>`;
+        r2StatusHtml += `</div>`;
+      });
+      
+      r2StatusHtml += '</div>';
+      document.getElementById('round2StatusSection').innerHTML = r2StatusHtml;
+    } else {
+      document.getElementById('round2StatusSection').innerHTML = '';
     }
 
     // Load scores table
