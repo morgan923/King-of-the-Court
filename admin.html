@@ -572,7 +572,6 @@ async function finalizeRound() {
     });
     
     standingsHtml += '</tbody></table>';
-    standingsHtml += '<div style="margin-top: 1rem;"><button class="btn primary" onclick="generateRound2FromRankings()">Generate Round 2 Pools & Post to Players</button></div>';
     
     // Save rankings to Firebase so they persist
     const r1RankingsJson = JSON.stringify(ranked);
@@ -581,14 +580,44 @@ async function finalizeRound() {
       r1Finalized: true
     });
     
-    console.log('Round 1 finalized and rankings saved to Firebase');
+    console.log('Round 1 finalized. Now generating Round 2 pools...');
+    
+    // Generate Round 2 pools automatically
+    const r2pools = [];
+    const maxPoolSize = 5;
+    const numPools = Math.ceil(players.length / maxPoolSize);
+    
+    for (let i = 0; i < numPools; i++) {
+      r2pools.push([]);
+    }
+
+    ranked.forEach((player, idx) => {
+      r2pools[idx % numPools].push(player.name);
+    });
+
+    console.log('Generated R2 pools:', r2pools);
+    const r2poolsJson = JSON.stringify(r2pools);
+
+    // Save Round 2 pools
+    await db.collection('tournaments').doc(currentTourId).update({
+      r2poolsJson: r2poolsJson,
+      status: 'round2'
+    });
+
+    console.log('Round 2 saved and posted to players');
     
     document.getElementById('r1RankingsTable').innerHTML = standingsHtml;
     
-    // Hide the finalize button and show success
-    document.getElementById('r1FinalizeBtn').style.display = 'none';
+    // Hide the finalize button
+    document.getElementById('finalizeSection').style.display = 'none';
     
-    alert('✓ Round 1 Finalized! Rankings saved and displayed below.');
+    // Load Round 2 pools
+    await loadRound2Pools();
+    
+    // Switch to Pools tab
+    showTab('pools');
+    
+    alert('✓ Round 1 Finalized!\n✓ Round 2 Pools Generated!\n✓ Posted to Players!');
   } catch (e) {
     console.error('Error finalizing round:', e);
     alert('Error: ' + e.message);
