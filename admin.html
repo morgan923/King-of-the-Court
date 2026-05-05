@@ -106,6 +106,14 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
       <div id="poolsTab" class="hidden">
         <button class="btn primary" onclick="generatePools()" style="margin-bottom: 1rem;">Generate Pools</button>
         <div class="pool-grid" id="poolsList"></div>
+        
+        <!-- Round 2 Section -->
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0efe9;">
+          <div class="card-title" style="margin-bottom: 1rem;">Round 2 - Reseed by Performance</div>
+          <button class="btn primary" onclick="generateRound2()" style="margin-bottom: 1rem;">Generate Round 2 Pools</button>
+          <div id="round2Standings"></div>
+          <div class="pool-grid" id="round2PoolsList"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -432,6 +440,177 @@ async function loadPools() {
   } catch (e) {
     console.error('Error loading pools:', e);
     document.getElementById('poolsList').innerHTML = '<p style="color: #dc2626;">Error: ' + e.message + '</p>';
+  }
+}
+
+async function generateRound2() {
+  try {
+    if (!firebaseReady || !db) {
+      alert('Firebase not ready');
+      return;
+    }
+    
+    if (!currentTourId) {
+      alert('No tournament selected');
+      return;
+    }
+
+    console.log('Generating Round 2 for:', currentTourId);
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    
+    if (!doc.data()) {
+      alert('Tournament not found');
+      return;
+    }
+
+    const data = doc.data();
+    const poolsJson = data.poolsJson;
+    
+    if (!poolsJson) {
+      alert('No Round 1 pools yet');
+      return;
+    }
+
+    const r1pools = JSON.parse(poolsJson);
+    const players = data.players;
+    
+    // Calculate stats for each player from Round 1 scores
+    const playerStats = {};
+    players.forEach(p => {
+      playerStats[p] = { wins: 0, losses: 0, pf: 0, pa: 0 };
+    });
+
+    // Get all scores from Round 1
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    scoresSnap.forEach(doc => {
+      const score = doc.data();
+      if (score.t1 && score.t2) {
+        const t1 = score.t1.join(' & ');
+        const t2 = score.t2.join(' & ');
+        
+        score.t1.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s1;
+            playerStats[p].pa += score.s2;
+            if (score.s1 > score.s2) playerStats[p].wins++;
+            else if (score.s1 < score.s2) playerStats[p].losses++;
+          }
+        });
+        
+        score.t2.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s2;
+            playerStats[p].pa += score.s1;
+            if (score.s2 > score.s1) playerStats[p].wins++;
+            else if (score.s2 < score.s1) playerStats[p].losses++;
+          }
+        });
+      }
+    });
+
+    console.log('Player stats:', playerStats);
+
+    // Check if pools are even sized
+    const poolSizes = [...new Set(r1pools.map(p => p.length))];
+    const isEven = poolSizes.length === 1;
+
+    // Rank players
+    const ranked = players.map(p => ({
+      name: p,
+      ...playerStats[p],
+      diff: playerStats[p].pf - playerStats[p].pa
+    }));
+
+    if (isEven) {
+      // Even pools - rank by wins, then losses, then diff
+      ranked.sort((a, b) => {
+        if (a.wins !== b.wins) return b.wins - a.wins;
+        if (a.losses !== b.losses) return a.losses - b.losses;
+        return b.diff - a.diff;
+      });
+    } else {
+      // Uneven pools - rank by point differential only
+      ranked.sort((a, b) => b.diff - a.diff);
+    }
+
+    console.log('Ranked players:', ranked);
+
+    // Display standings
+    let standingsHtml = '<table class="score-table"><thead><tr><th>#</th><th>Player</th>';
+    if (isEven) {
+      standingsHtml += '<th>W</th><th>L</th>';
+    }
+    standingsHtml += '<th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>';
+    
+    ranked.forEach((r, i) => {
+      standingsHtml += `<tr><td>${i + 1}</td><td style="font-weight: 600;">${r.name}</td>`;
+      if (isEven) {
+        standingsHtml += `<td>${r.wins}W</td><td>${r.losses}L</td>`;
+      }
+      standingsHtml += `<td>${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+    });
+    
+    standingsHtml += '</tbody></table>';
+    document.getElementById('round2Standings').innerHTML = standingsHtml;
+
+    // Generate Round 2 pools by snake draft (1st picks 1st, 2nd picks 2nd, 3rd picks 4th, 4th picks 3rd, etc.)
+    const r2pools = [];
+    const maxPoolSize = 5;
+    const numPools = Math.ceil(players.length / maxPoolSize);
+    
+    for (let i = 0; i < numPools; i++) {
+      r2pools.push([]);
+    }
+
+    // Snake draft - alternate direction each pool
+    ranked.forEach((player, idx) => {
+      r2pools[idx % numPools].push(player.name);
+    });
+
+    console.log('Round 2 pools:', r2pools);
+
+    // Save Round 2 pools
+    const r2poolsJson = JSON.stringify(r2pools);
+    await db.collection('tournaments').doc(currentTourId).update({
+      r2poolsJson: r2poolsJson,
+      status: 'round2'
+    });
+
+    alert('✓ Round 2 pools generated!');
+    loadRound2Pools();
+  } catch (e) {
+    console.error('Error generating Round 2:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+async function loadRound2Pools() {
+  try {
+    if (!firebaseReady || !db) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const r2poolsJson = doc.data().r2poolsJson;
+    
+    let html = '';
+    if (!r2poolsJson) {
+      html = '<p style="color: #aaa;">No Round 2 pools yet</p>';
+    } else {
+      const r2pools = JSON.parse(r2poolsJson);
+      r2pools.forEach((pool, i) => {
+        html += `
+          <div class="card">
+            <div style="font-weight: 600; margin-bottom: 8px;">Pool ${String.fromCharCode(65 + i)} (${pool.length} players)</div>
+            <div style="font-size: 12px; color: #666; line-height: 1.8;">
+              ${pool.map((p, j) => `${j + 1}. ${p}`).join('<br/>')}
+            </div>
+          </div>
+        `;
+      });
+    }
+    
+    document.getElementById('round2PoolsList').innerHTML = html;
+  } catch (e) {
+    console.error('Error:', e);
   }
 }
 
