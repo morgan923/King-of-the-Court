@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -121,10 +122,11 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
         <!-- Round 2 Section -->
         <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0efe9;">
           <div class="card-title" style="margin-bottom: 1rem;">Round 1 Final Rankings</div>
-          <div id="round2Standings"></div>
+          <div id="r1RankingsTable"></div>
           
-          <div style="margin-top: 1.5rem; margin-bottom: 1rem;">
+          <div style="margin-top: 1.5rem; margin-bottom: 1rem; display: flex; gap: 8px;">
             <button class="btn primary" onclick="generateRound2()">Generate Round 2 Pools</button>
+            <button class="btn" style="background: #fee2e2; color: #dc2626;" onclick="resetRound2()">Reset R2</button>
           </div>
           <div class="pool-grid" id="round2PoolsList"></div>
         </div>
@@ -581,7 +583,7 @@ async function generateRound2() {
     });
     
     standingsHtml += '</tbody></table>';
-    document.getElementById('round2Standings').innerHTML = standingsHtml;
+    document.getElementById('r1RankingsTable').innerHTML = standingsHtml;
 
     // Generate Round 2 pools
     const r2pools = [];
@@ -638,7 +640,7 @@ async function loadRound2Pools() {
     
     let html = '';
     if (!r2poolsJson) {
-      html = '<p style="color: #aaa;">No Round 2 pools yet</p>';
+      html = '<p style="color: #aaa;">No Round 2 pools yet - click "Generate Round 2 Pools"</p>';
     } else {
       const r2pools = JSON.parse(r2poolsJson);
       console.log('Parsed R2 pools:', r2pools);
@@ -658,6 +660,30 @@ async function loadRound2Pools() {
   } catch (e) {
     console.error('Error loading Round 2 pools:', e);
     document.getElementById('round2PoolsList').innerHTML = '<p style="color: #dc2626;">Error: ' + e.message + '</p>';
+  }
+}
+
+async function resetRound2() {
+  if (!confirm('Are you sure you want to reset Round 2? This will delete all Round 2 data.')) {
+    return;
+  }
+  
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    console.log('Resetting Round 2 for:', currentTourId);
+    await db.collection('tournaments').doc(currentTourId).update({
+      r2poolsJson: firebase.firestore.FieldValue.delete(),
+      status: 'pools_created'
+    });
+    
+    console.log('Round 2 reset');
+    alert('✓ Round 2 reset!');
+    document.getElementById('round2PoolsList').innerHTML = '<p style="color: #aaa;">No Round 2 pools yet - click "Generate Round 2 Pools"</p>';
+    document.getElementById('r1RankingsTable').innerHTML = '';
+  } catch (e) {
+    console.error('Error resetting Round 2:', e);
+    alert('Error: ' + e.message);
   }
 }
 
