@@ -373,23 +373,25 @@ async function loadScores() {
 
     // Generate expected games for each pool
     const poolGames = {};
+    let gameCounter = 1;
+    
     pools.forEach((pool, poolIdx) => {
       const poolLetter = String.fromCharCode(65 + poolIdx);
       poolGames[poolLetter] = [];
       
       if (pool.length === 4) {
         poolGames[poolLetter] = [
-          { id: `p${poolIdx}g1`, t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
-          { id: `p${poolIdx}g2`, t1: [pool[0], pool[2]], t2: [pool[1], pool[3]] },
-          { id: `p${poolIdx}g3`, t1: [pool[0], pool[3]], t2: [pool[1], pool[2]] }
+          { id: `g${gameCounter++}`, t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
+          { id: `g${gameCounter++}`, t1: [pool[0], pool[2]], t2: [pool[1], pool[3]] },
+          { id: `g${gameCounter++}`, t1: [pool[0], pool[3]], t2: [pool[1], pool[2]] }
         ];
       } else if (pool.length === 5) {
         poolGames[poolLetter] = [
-          { id: `p${poolIdx}g1`, t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
-          { id: `p${poolIdx}g2`, t1: [pool[0], pool[2]], t2: [pool[1], pool[4]] },
-          { id: `p${poolIdx}g3`, t1: [pool[0], pool[3]], t2: [pool[2], pool[4]] },
-          { id: `p${poolIdx}g4`, t1: [pool[0], pool[4]], t2: [pool[1], pool[3]] },
-          { id: `p${poolIdx}g5`, t1: [pool[1], pool[2]], t2: [pool[3], pool[4]] }
+          { id: `g${gameCounter++}`, t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
+          { id: `g${gameCounter++}`, t1: [pool[0], pool[2]], t2: [pool[1], pool[4]] },
+          { id: `g${gameCounter++}`, t1: [pool[0], pool[3]], t2: [pool[2], pool[4]] },
+          { id: `g${gameCounter++}`, t1: [pool[0], pool[4]], t2: [pool[1], pool[3]] },
+          { id: `g${gameCounter++}`, t1: [pool[1], pool[2]], t2: [pool[3], pool[4]] }
         ];
       }
     });
