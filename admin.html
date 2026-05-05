@@ -329,10 +329,9 @@ async function openTour(tourId) {
       });
       
       standingsHtml += '</tbody></table>';
-      standingsHtml += '<div style="margin-top: 1rem;"><button class="btn primary" onclick="generateRound2FromRankings()">Generate Round 2 Pools & Post to Players</button></div>';
       
-      document.getElementById('r1RankingsTable').innerHTML = standingsHtml;
-      document.getElementById('r1FinalizeBtn').style.display = 'none';
+      // Just hide the finalize button since R1 is already finalized
+      document.getElementById('finalizeSection').style.display = 'none';
     }
   } catch (e) {
     console.error('Error:', e);
@@ -619,16 +618,11 @@ async function finalizeRound() {
 
     console.log('Round 2 saved and posted to players');
     
-    document.getElementById('r1RankingsTable').innerHTML = standingsHtml;
-    
     // Hide the finalize button
     document.getElementById('finalizeSection').style.display = 'none';
     
-    // Load Round 2 pools
-    await loadRound2Pools();
-    
-    // Switch to Pools tab
-    showTab('pools');
+    // Reload scores to show R2 pool status
+    await loadScores();
     
     alert('✓ Round 1 Finalized!\n✓ Round 2 Pools Generated!\n✓ Posted to Players!');
   } catch (e) {
@@ -722,38 +716,54 @@ async function loadPools() {
     
     if (!doc.data()) {
       console.error('Tournament not found');
-      document.getElementById('poolsList').innerHTML = '<p style="color: #aaa;">Tournament not found</p>';
+      document.getElementById('r1PoolsList').innerHTML = '<p style="color: #aaa;">Tournament not found</p>';
       return;
     }
 
-    // Parse pools from JSON string
+    // Load R1 Pools
     const poolsJson = doc.data().poolsJson;
-    let pools = [];
-    if (poolsJson) {
-      pools = JSON.parse(poolsJson);
-    }
-    console.log('Pools from Firebase:', pools);
-    
-    let html = '';
-    if (pools.length === 0) {
-      html = '<p style="color: #aaa;">No pools yet - click "Generate Pools"</p>';
+    let r1Html = '';
+    if (!poolsJson) {
+      r1Html = '<p style="color: #aaa;">No Round 1 pools yet</p>';
     } else {
+      const pools = JSON.parse(poolsJson);
       pools.forEach((pool, i) => {
-        html += `
+        r1Html += `
           <div class="card">
-            <div style="font-weight: 600; margin-bottom: 8px;">Pool ${String.fromCharCode(65 + i)} (${pool.length} players)</div>
-            <div style="font-size: 12px; color: #666; line-height: 1.8;">
-              ${pool.map((p, j) => `${j + 1}. ${p}`).join('<br/>')}
+            <div style="font-weight: 600; margin-bottom: 8px;">Round 1 - Pool ${String.fromCharCode(65 + i)}</div>
+            <div style="font-size: 13px; color: #666; line-height: 2;">
+              ${pool.map(p => `• ${p}`).join('<br/>')}
             </div>
           </div>
         `;
       });
     }
-    
-    document.getElementById('poolsList').innerHTML = html;
+    document.getElementById('r1PoolsList').innerHTML = r1Html;
+
+    // Load R2 Pools if they exist
+    const r2poolsJson = doc.data().r2poolsJson;
+    let r2Html = '';
+    if (r2poolsJson) {
+      const r2pools = JSON.parse(r2poolsJson);
+      r2Html = '<div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0efe9;">';
+      r2Html += '<div style="font-weight: 700; font-size: 15px; margin-bottom: 1rem;">Round 2 Pools</div>';
+      r2Html += '<div class="pool-grid">';
+      r2pools.forEach((pool, i) => {
+        r2Html += `
+          <div class="card">
+            <div style="font-weight: 600; margin-bottom: 8px;">Round 2 - Pool ${String.fromCharCode(65 + i)}</div>
+            <div style="font-size: 13px; color: #666; line-height: 2;">
+              ${pool.map(p => `• ${p}`).join('<br/>')}
+            </div>
+          </div>
+        `;
+      });
+      r2Html += '</div></div>';
+    }
+    document.getElementById('r2PoolsSection').innerHTML = r2Html;
   } catch (e) {
     console.error('Error loading pools:', e);
-    document.getElementById('poolsList').innerHTML = '<p style="color: #dc2626;">Error: ' + e.message + '</p>';
+    document.getElementById('r1PoolsList').innerHTML = '<p style="color: #dc2626;">Error: ' + e.message + '</p>';
   }
 }
 
@@ -901,55 +911,9 @@ async function generateRound2() {
 
     console.log('Round 2 saved to Firebase successfully');
     alert('✓ Round 2 pools generated!');
-    
-    // Refresh display
-    loadRound2Pools();
   } catch (e) {
     console.error('Error generating Round 2:', e);
     alert('Error: ' + e.message);
-  }
-}
-
-async function loadRound2Pools() {
-  try {
-    if (!firebaseReady || !db) {
-      console.error('Firebase not ready');
-      return;
-    }
-    
-    if (!currentTourId) {
-      console.error('No tournament ID');
-      return;
-    }
-    
-    const doc = await db.collection('tournaments').doc(currentTourId).get();
-    const data = doc.data();
-    const r2poolsJson = data ? data.r2poolsJson : null;
-    
-    console.log('R2 Pools JSON:', r2poolsJson);
-    
-    let html = '';
-    if (!r2poolsJson) {
-      html = '<p style="color: #aaa;">No Round 2 pools yet - click "Generate Round 2 Pools"</p>';
-    } else {
-      const r2pools = JSON.parse(r2poolsJson);
-      console.log('Parsed R2 pools:', r2pools);
-      r2pools.forEach((pool, i) => {
-        html += `
-          <div class="card">
-            <div style="font-weight: 600; margin-bottom: 8px;">Pool ${String.fromCharCode(65 + i)} (${pool.length} players)</div>
-            <div style="font-size: 12px; color: #666; line-height: 1.8;">
-              ${pool.map((p, j) => `${j + 1}. ${p}`).join('<br/>')}
-            </div>
-          </div>
-        `;
-      });
-    }
-    
-    document.getElementById('round2PoolsList').innerHTML = html;
-  } catch (e) {
-    console.error('Error loading Round 2 pools:', e);
-    document.getElementById('round2PoolsList').innerHTML = '<p style="color: #dc2626;">Error: ' + e.message + '</p>';
   }
 }
 
@@ -969,8 +933,7 @@ async function resetRound2() {
     
     console.log('Round 2 reset');
     alert('✓ Round 2 reset!');
-    document.getElementById('round2PoolsList').innerHTML = '<p style="color: #aaa;">No Round 2 pools yet - click "Generate Round 2 Pools"</p>';
-    document.getElementById('r1RankingsTable').innerHTML = '';
+    await loadScores();
   } catch (e) {
     console.error('Error resetting Round 2:', e);
     alert('Error: ' + e.message);
