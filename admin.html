@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta charset="UTF-8"/>
@@ -40,6 +41,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 
   <!-- Home Screen -->
+
   <div id="homeScreen">
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -52,6 +54,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 
   <!-- Create Tournament -->
+
   <div id="createScreen" class="hidden">
     <div style="margin-bottom: 1rem;">
       <button class="btn" onclick="showHome()">← Back</button>
@@ -81,6 +84,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 
   <!-- Tournament Detail -->
+
   <div id="detailScreen" class="hidden">
     <div style="margin-bottom: 1rem;">
       <button class="btn" onclick="showHome()">← Back</button>
@@ -93,54 +97,59 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
         <button class="tab-btn" onclick="showTab('pools')">Pools</button>
       </div>
 
-      <!-- Scores Tab -->
-      <div id="scoresTab">
-        <div style="margin-bottom: 1rem; display: flex; gap: 8px;">
-          <button class="btn primary" onclick="finalizeRound()" id="finalizeBtn">Finalize Round 1</button>
-          <div style="flex: 1;"></div>
-          <span style="font-size: 12px; color: #888; align-self: center;" id="roundStatus">Round 1 - Active</span>
-        </div>
-        <table class="score-table">
-          <thead>
-            <tr><th>Round</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
-          </thead>
-          <tbody id="scoresList"></tbody>
-        </table>
-      </div>
-
-      <!-- Rankings Tab -->
-      <div id="rankingsTab" class="hidden">
-        <table class="score-table">
-          <thead>
-            <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
-          </thead>
-          <tbody id="rankingsList"></tbody>
-        </table>
-      </div>
-
-      <!-- Pools Tab -->
-      <div id="poolsTab" class="hidden">
-        <button class="btn primary" onclick="generatePools()" style="margin-bottom: 1rem;">Generate Pools</button>
-        <div class="pool-grid" id="poolsList"></div>
-        
-        <!-- Round 2 Section -->
-        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0efe9;">
-          <div class="card-title" style="margin-bottom: 1rem;">Round 1 Final Rankings</div>
-          <button class="btn primary" onclick="finalizeRound()" style="margin-bottom: 1rem;">Finalize Round 1</button>
-          <div id="r1RankingsTable"></div>
-          
-          <div style="margin-top: 1.5rem; margin-bottom: 1rem; display: flex; gap: 8px;">
-            <button class="btn" style="background: #fee2e2; color: #dc2626;" onclick="resetRound2()">Reset R2</button>
-          </div>
-          <div class="pool-grid" id="round2PoolsList"></div>
-        </div>
-      </div>
+```
+  <!-- Scores Tab -->
+  <div id="scoresTab">
+    <div id="gameStatusSection"></div>
+    <div style="margin-bottom: 1rem; display: flex; gap: 8px; align-items: center;" id="finalizeSection" style="display: none;">
+      <button class="btn primary" id="r1FinalizeBtn" onclick="finalizeRound()">Finalize Round 1</button>
+      <span style="font-size: 12px; color: #16a34a; font-weight: 600;">✓ All games complete</span>
     </div>
+    <table class="score-table">
+      <thead>
+        <tr><th>Round</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
+      </thead>
+      <tbody id="scoresList"></tbody>
+    </table>
+  </div>
+
+  <!-- Rankings Tab -->
+  <div id="rankingsTab" class="hidden">
+    <table class="score-table">
+      <thead>
+        <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
+      </thead>
+      <tbody id="rankingsList"></tbody>
+    </table>
+  </div>
+
+  <!-- Pools Tab -->
+  <div id="poolsTab" class="hidden">
+    <button class="btn primary" onclick="generatePools()" style="margin-bottom: 1rem;">Generate Pools</button>
+    <div class="pool-grid" id="poolsList"></div>
+    
+    <!-- Round 2 Section -->
+    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0efe9;">
+      <div class="card-title" style="margin-bottom: 1rem;">Round 1 Final Rankings</div>
+      <button class="btn primary" id="r1FinalizeBtn" onclick="finalizeRound()" style="margin-bottom: 1rem;">Finalize Round 1</button>
+      <div id="r1RankingsTable"></div>
+      
+      <div style="margin-top: 1.5rem; margin-bottom: 1rem; display: flex; gap: 8px;">
+        <button class="btn" style="background: #fee2e2; color: #dc2626;" onclick="resetRound2()">Reset R2</button>
+      </div>
+      <div class="pool-grid" id="round2PoolsList"></div>
+    </div>
+  </div>
+</div>
+```
+
   </div>
 </div>
 
 <!-- Firebase Scripts (load synchronously) -->
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
@@ -304,6 +313,35 @@ async function openTour(tourId) {
     document.getElementById('detailTitle').textContent = data.name + ' (' + data.playerCount + ' players)';
     showScreen('detail');
     loadScores();
+    
+    // Load finalized rankings if they exist
+    if (data.r1Finalized && data.r1RankingsJson) {
+      const ranked = JSON.parse(data.r1RankingsJson);
+      const pools = JSON.parse(data.poolsJson);
+      const poolSizes = [...new Set(pools.map(p => p.length))];
+      const isEven = poolSizes.length === 1;
+      
+      // Display the saved rankings
+      let standingsHtml = '<table class="score-table"><thead><tr><th>#</th><th>Player</th>';
+      if (isEven) {
+        standingsHtml += '<th>W</th><th>L</th>';
+      }
+      standingsHtml += '<th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>';
+      
+      ranked.forEach((r, i) => {
+        standingsHtml += `<tr><td>${i + 1}</td><td style="font-weight: 600;">${r.name}</td>`;
+        if (isEven) {
+          standingsHtml += `<td>${r.wins}W</td><td>${r.losses}L</td>`;
+        }
+        standingsHtml += `<td>${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+      });
+      
+      standingsHtml += '</tbody></table>';
+      standingsHtml += '<div style="margin-top: 1rem;"><button class="btn primary" onclick="generateRound2FromRankings()">Generate Round 2 Pools & Post to Players</button></div>';
+      
+      document.getElementById('r1RankingsTable').innerHTML = standingsHtml;
+      document.getElementById('r1FinalizeBtn').style.display = 'none';
+    }
   } catch (e) {
     console.error('Error:', e);
   }
@@ -314,34 +352,108 @@ async function loadScores() {
     if (!firebaseReady || !db) return;
     
     const doc = await db.collection('tournaments').doc(currentTourId).get();
-    const status = doc.data().status;
+    const data = doc.data();
+    const status = data.status;
     const currentRound = status === 'round2' ? 2 : 1;
     
-    // Update finalize button and status
-    const finalizeBtn = document.getElementById('finalizeBtn');
-    const roundStatus = document.getElementById('roundStatus');
-    
-    if (currentRound === 1) {
-      finalizeBtn.style.display = 'block';
-      finalizeBtn.textContent = 'Finalize Round 1';
-      roundStatus.textContent = 'Round 1 - Active';
-    } else {
-      finalizeBtn.style.display = 'none';
-      roundStatus.textContent = 'Round 2 - Active';
+    // Get pools
+    const poolsJson = data.poolsJson;
+    let pools = [];
+    if (poolsJson) {
+      pools = JSON.parse(poolsJson);
     }
     
-    const snap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    // Get all scores
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    const scoresByGame = {};
+    scoresSnap.forEach(scoreDoc => {
+      const score = scoreDoc.data();
+      scoresByGame[score.gameId] = score;
+    });
+
+    // Generate expected games for each pool
+    const poolGames = {};
+    pools.forEach((pool, poolIdx) => {
+      const poolLetter = String.fromCharCode(65 + poolIdx);
+      poolGames[poolLetter] = [];
+      
+      if (pool.length === 4) {
+        poolGames[poolLetter] = [
+          { id: `p${poolIdx}g1`, t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
+          { id: `p${poolIdx}g2`, t1: [pool[0], pool[2]], t2: [pool[1], pool[3]] },
+          { id: `p${poolIdx}g3`, t1: [pool[0], pool[3]], t2: [pool[1], pool[2]] }
+        ];
+      } else if (pool.length === 5) {
+        poolGames[poolLetter] = [
+          { id: `p${poolIdx}g1`, t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
+          { id: `p${poolIdx}g2`, t1: [pool[0], pool[2]], t2: [pool[1], pool[4]] },
+          { id: `p${poolIdx}g3`, t1: [pool[0], pool[3]], t2: [pool[2], pool[4]] },
+          { id: `p${poolIdx}g4`, t1: [pool[0], pool[4]], t2: [pool[1], pool[3]] },
+          { id: `p${poolIdx}g5`, t1: [pool[1], pool[2]], t2: [pool[3], pool[4]] }
+        ];
+      }
+    });
+
+    // Build pool status HTML
+    let poolStatusHtml = '';
+    let allGamesComplete = true;
+    
+    Object.keys(poolGames).sort().forEach(poolLetter => {
+      const games = poolGames[poolLetter];
+      let completedGames = 0;
+      
+      poolStatusHtml += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #dc2626;">`;
+      poolStatusHtml += `<div style="font-weight: 600; margin-bottom: 0.5rem;">Pool ${poolLetter}</div>`;
+      poolStatusHtml += `<div style="font-size: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px;">`;
+      
+      games.forEach(game => {
+        const score = scoresByGame[game.id];
+        const isComplete = !!score;
+        if (isComplete) completedGames++;
+        else allGamesComplete = false;
+        
+        const status = isComplete ? '✓ Complete' : '○ Pending';
+        const statusColor = isComplete ? '#16a34a' : '#f59e0b';
+        const bgColor = isComplete ? '#f0fdf4' : '#fffbeb';
+        
+        poolStatusHtml += `
+          <div style="padding: 8px; background: ${bgColor}; border-radius: 6px; border-left: 3px solid ${statusColor}; font-size: 11px;">
+            <div style="font-weight: 500; color: ${statusColor};">${status}</div>
+            <div style="margin-top: 4px; color: #666;">
+              ${game.t1.join(' & ')} vs ${game.t2.join(' & ')}
+              ${isComplete ? `<br/><strong>${score.s1} - ${score.s2}</strong>` : ''}
+            </div>
+          </div>
+        `;
+      });
+      
+      poolStatusHtml += `</div>`;
+      poolStatusHtml += `<div style="margin-top: 0.5rem; font-size: 11px; color: #666;">${completedGames}/${games.length} games complete</div>`;
+      poolStatusHtml += `</div>`;
+    });
+    
+    document.getElementById('gameStatusSection').innerHTML = poolStatusHtml;
+    
+    // Show/hide finalize button based on completion
+    const finalizeSection = document.getElementById('finalizeSection');
+    if (allGamesComplete && pools.length > 0) {
+      finalizeSection.style.display = 'flex';
+    } else {
+      finalizeSection.style.display = 'none';
+    }
+
+    // Load scores table
     let html = '';
-    snap.forEach(doc => {
-      const data = doc.data();
-      const time = data.submittedAt ? new Date(data.submittedAt.toDate()).toLocaleTimeString() : '—';
-      const round = data.round || 1; // Default to round 1 if not set
+    scoresSnap.forEach(scoreDoc => {
+      const scoreData = scoreDoc.data();
+      const time = scoreData.submittedAt ? new Date(scoreData.submittedAt.toDate()).toLocaleTimeString() : '—';
+      const round = scoreData.round || 1;
       html += `
         <tr>
           <td style="font-weight: 600;">R${round}</td>
-          <td>${data.t1 ? data.t1.join(' & ') : '—'}</td>
-          <td style="font-weight: 600;">${data.s1 || 0} - ${data.s2 || 0}</td>
-          <td>${data.t2 ? data.t2.join(' & ') : '—'}</td>
+          <td>${scoreData.t1 ? scoreData.t1.join(' & ') : '—'}</td>
+          <td style="font-weight: 600;">${scoreData.s1 || 0} - ${scoreData.s2 || 0}</td>
+          <td>${scoreData.t2 ? scoreData.t2.join(' & ') : '—'}</td>
           <td style="font-size: 11px;">${time}</td>
         </tr>
       `;
@@ -460,12 +572,21 @@ async function finalizeRound() {
     standingsHtml += '</tbody></table>';
     standingsHtml += '<div style="margin-top: 1rem;"><button class="btn primary" onclick="generateRound2FromRankings()">Generate Round 2 Pools & Post to Players</button></div>';
     
+    // Save rankings to Firebase so they persist
+    const r1RankingsJson = JSON.stringify(ranked);
+    await db.collection('tournaments').doc(currentTourId).update({
+      r1RankingsJson: r1RankingsJson,
+      r1Finalized: true
+    });
+    
+    console.log('Round 1 finalized and rankings saved to Firebase');
+    
     document.getElementById('r1RankingsTable').innerHTML = standingsHtml;
     
-    // Switch to pools tab to show rankings
-    showTab('pools');
+    // Hide the finalize button and show success
+    document.getElementById('r1FinalizeBtn').style.display = 'none';
     
-    alert('✓ Round 1 Finalized! Rankings shown below.');
+    alert('✓ Round 1 Finalized! Rankings saved and displayed below.');
   } catch (e) {
     console.error('Error finalizing round:', e);
     alert('Error: ' + e.message);
@@ -879,5 +1000,6 @@ window.addEventListener('load', () => {
   loadTournaments();
 });
 </script>
+
 </body>
 </html>
