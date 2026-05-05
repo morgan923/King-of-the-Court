@@ -89,6 +89,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
       <div class="card-title" id="detailTitle"></div>
       <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
         <button class="tab-btn active" onclick="showTab('scores')">Scores</button>
+        <button class="tab-btn" onclick="showTab('rankings')">Live Rankings</button>
         <button class="tab-btn" onclick="showTab('pools')">Pools</button>
       </div>
 
@@ -99,6 +100,16 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
             <tr><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
           </thead>
           <tbody id="scoresList"></tbody>
+        </table>
+      </div>
+
+      <!-- Rankings Tab -->
+      <div id="rankingsTab" class="hidden">
+        <table class="score-table">
+          <thead>
+            <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
+          </thead>
+          <tbody id="rankingsList"></tbody>
         </table>
       </div>
 
@@ -315,10 +326,16 @@ async function loadScores() {
 
 function showTab(tab) {
   document.getElementById('scoresTab').classList.toggle('hidden', tab !== 'scores');
+  document.getElementById('rankingsTab').classList.toggle('hidden', tab !== 'rankings');
   document.getElementById('poolsTab').classList.toggle('hidden', tab !== 'pools');
   document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', (i === 0 && tab === 'scores') || (i === 1 && tab === 'pools'));
+    btn.classList.toggle('active', 
+      (i === 0 && tab === 'scores') || 
+      (i === 1 && tab === 'rankings') || 
+      (i === 2 && tab === 'pools')
+    );
   });
+  if (tab === 'rankings') loadRankings();
   if (tab === 'pools') loadPools();
 }
 
@@ -609,6 +626,67 @@ async function loadRound2Pools() {
     }
     
     document.getElementById('round2PoolsList').innerHTML = html;
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
+
+async function loadRankings() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const players = data.players || [];
+    
+    // Calculate stats for each player
+    const playerStats = {};
+    players.forEach(p => {
+      playerStats[p] = { wins: 0, losses: 0, pf: 0, pa: 0 };
+    });
+
+    // Get all scores
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    scoresSnap.forEach(doc => {
+      const score = doc.data();
+      if (score.t1 && score.t2) {
+        score.t1.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s1;
+            playerStats[p].pa += score.s2;
+            if (score.s1 > score.s2) playerStats[p].wins++;
+            else if (score.s1 < score.s2) playerStats[p].losses++;
+          }
+        });
+        
+        score.t2.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s2;
+            playerStats[p].pa += score.s1;
+            if (score.s2 > score.s1) playerStats[p].wins++;
+            else if (score.s2 < score.s1) playerStats[p].losses++;
+          }
+        });
+      }
+    });
+
+    // Rank players
+    const ranked = players.map(p => ({
+      name: p,
+      ...playerStats[p],
+      diff: playerStats[p].pf - playerStats[p].pa
+    })).sort((a, b) => {
+      if (a.wins !== b.wins) return b.wins - a.wins;
+      if (a.losses !== b.losses) return a.losses - b.losses;
+      return b.diff - a.diff;
+    });
+
+    let html = '';
+    ranked.forEach((r, i) => {
+      html += `<tr><td>${i + 1}</td><td style="font-weight: 600;">${r.name}</td><td>${r.wins}</td><td>${r.losses}</td><td>${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+    });
+    
+    document.getElementById('rankingsList').innerHTML = html;
   } catch (e) {
     console.error('Error:', e);
   }
