@@ -120,9 +120,12 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
         
         <!-- Round 2 Section -->
         <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0efe9;">
-          <div class="card-title" style="margin-bottom: 1rem;">Round 2 - Reseed by Performance</div>
-          <button class="btn primary" onclick="generateRound2()" style="margin-bottom: 1rem;">Generate Round 2 Pools</button>
+          <div class="card-title" style="margin-bottom: 1rem;">Round 1 Final Rankings</div>
           <div id="round2Standings"></div>
+          
+          <div style="margin-top: 1.5rem; margin-bottom: 1rem;">
+            <button class="btn primary" onclick="generateRound2()">Generate Round 2 Pools</button>
+          </div>
           <div class="pool-grid" id="round2PoolsList"></div>
         </div>
       </div>
@@ -336,7 +339,10 @@ function showTab(tab) {
     );
   });
   if (tab === 'rankings') loadRankings();
-  if (tab === 'pools') loadPools();
+  if (tab === 'pools') {
+    loadPools();
+    loadRankings(); // Also load rankings for R2 generation
+  }
 }
 
 function shuffle(arr) {
@@ -360,20 +366,19 @@ async function generatePools() {
       return;
     }
 
-    console.log('Generating pools for:', currentTourId);
+    // Check if pools already exist
     const doc = await db.collection('tournaments').doc(currentTourId).get();
-    
-    if (!doc.data()) {
-      alert('Tournament not found');
+    if (doc.data().poolsJson) {
+      alert('Pools already generated! Cannot regenerate.');
       return;
     }
 
+    console.log('Generating pools for:', currentTourId);
     const data = doc.data();
-    console.log('Tournament data:', data);
-    
     const players = data.players;
-    if (!players || players.length === 0) {
-      alert('No players in tournament');
+    
+    if (!players || players.length < 4) {
+      alert('Need at least 4 players');
       return;
     }
 
@@ -481,6 +486,13 @@ async function generateRound2() {
     }
 
     const data = doc.data();
+    
+    // Check if Round 2 already exists
+    if (data.r2poolsJson) {
+      alert('Round 2 pools already generated! Cannot regenerate.');
+      return;
+    }
+    
     const poolsJson = data.poolsJson;
     
     if (!poolsJson) {
@@ -491,6 +503,8 @@ async function generateRound2() {
     const r1pools = JSON.parse(poolsJson);
     const players = data.players;
     
+    console.log('Starting R2 generation with players:', players);
+    
     // Calculate stats for each player from Round 1 scores
     const playerStats = {};
     players.forEach(p => {
@@ -499,12 +513,11 @@ async function generateRound2() {
 
     // Get all scores from Round 1
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
-    scoresSnap.forEach(doc => {
-      const score = doc.data();
+    console.log('Found', scoresSnap.size, 'scores');
+    
+    scoresSnap.forEach(scoreDoc => {
+      const score = scoreDoc.data();
       if (score.t1 && score.t2) {
-        const t1 = score.t1.join(' & ');
-        const t2 = score.t2.join(' & ');
-        
         score.t1.forEach(p => {
           if (playerStats[p]) {
             playerStats[p].pf += score.s1;
@@ -570,7 +583,7 @@ async function generateRound2() {
     standingsHtml += '</tbody></table>';
     document.getElementById('round2Standings').innerHTML = standingsHtml;
 
-    // Generate Round 2 pools by snake draft (1st picks 1st, 2nd picks 2nd, 3rd picks 4th, 4th picks 3rd, etc.)
+    // Generate Round 2 pools
     const r2pools = [];
     const maxPoolSize = 5;
     const numPools = Math.ceil(players.length / maxPoolSize);
@@ -579,28 +592,26 @@ async function generateRound2() {
       r2pools.push([]);
     }
 
-    // Snake draft - alternate direction each pool
+    // Snake draft - distribute ranked players
     ranked.forEach((player, idx) => {
       r2pools[idx % numPools].push(player.name);
     });
 
-    console.log('Round 2 pools:', r2pools);
+    console.log('Generated R2 pools:', r2pools);
+    const r2poolsJson = JSON.stringify(r2pools);
+    console.log('R2 JSON string:', r2poolsJson);
 
     // Save Round 2 pools
-    const r2poolsJson = JSON.stringify(r2pools);
     await db.collection('tournaments').doc(currentTourId).update({
       r2poolsJson: r2poolsJson,
       status: 'round2'
     });
 
-    console.log('Round 2 saved to Firebase');
+    console.log('Round 2 saved to Firebase successfully');
     alert('✓ Round 2 pools generated!');
     
-    // Wait a moment for Firebase to sync, then refresh
-    setTimeout(() => {
-      loadRound2Pools();
-      loadPools();
-    }, 500);
+    // Refresh display
+    loadRound2Pools();
   } catch (e) {
     console.error('Error generating Round 2:', e);
     alert('Error: ' + e.message);
