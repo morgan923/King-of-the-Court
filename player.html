@@ -681,7 +681,10 @@ async function submitScore() {
     console.log('Score submitted successfully');
     alert('✓ Score saved!');
     closeModal();
-    loadGames();
+    // Reload current tabs
+    loadRankings();
+    loadGamesByRound('r1');
+    loadGamesByRound('r2');
   } catch (e) {
     console.error('Error submitting score:', e);
     alert('Error submitting score: ' + e.message);
