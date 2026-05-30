@@ -17,7 +17,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .btn:hover { background: #f5f4f0; }
 .btn.primary { background: #dc2626; color: #fff; border-color: #dc2626; }
 .btn.primary:hover { background: #b91c1c; }
-input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 13px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 13px; width: 100%; }
 .ptag { display: inline-block; background: #fee2e2; padding: 4px 8px; border-radius: 6px; margin: 3px; font-size: 12px; }
 .ptag .x { cursor: pointer; margin-left: 6px; color: #999; }
 .plist { padding: 8px; border: 1px dashed #ccc; border-radius: 6px; min-height: 40px; margin: 8px 0; }
@@ -31,106 +32,103 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 .score-table th { background: #faf9f7; font-weight: 600; color: #888; }
 .tab-btn { padding: 8px 16px; margin-right: 8px; border: 1px solid #d5d4d0; background: #fff; border-radius: 6px; cursor: pointer; font-size: 13px; }
 .tab-btn.active { background: #dc2626; color: #fff; border-color: #dc2626; }
+.tour-list { max-height: 300px; overflow-y: auto; border: 1px solid #e5e4e0; border-radius: 8px; }
+.tour-item { padding: 12px; border-bottom: 1px solid #f0efe9; cursor: pointer; }
+.tour-item:hover { background: #faf9f7; }
+.tour-item.active { background: #fee2e2; }
+.pool-status { margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #dc2626; }
+.game-row { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 8px; align-items: center; padding: 8px; background: #fff; border: 1px solid #e5e4e0; border-radius: 6px; margin-bottom: 8px; }
+.game-status { font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 4px; }
+.game-status.complete { background: #f0fdf4; color: #16a34a; }
+.game-status.pending { background: #fffbeb; color: #f59e0b; }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
     <h1>🏐 Brevard Volleyball - Admin</h1>
-    <p>Create tournaments, view scores, manage brackets</p>
+    <p>Tournament Management</p>
   </div>
 
-  <!-- Home Screen -->
+  <!-- Tournament Selection -->
 
-  <div id="homeScreen">
+  <div id="tourSelectScreen">
     <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div class="card-title">Tournaments</div>
-        <button class="btn primary" onclick="showCreateTour()">+ New Tournament</button>
-      </div>
+      <div class="card-title">Select Tournament or Create New</div>
+      <button class="btn primary" onclick="showSetup(null)" style="margin-bottom: 1rem;">+ New Tournament</button>
+      <div class="tour-list" id="tourListContainer"></div>
     </div>
-    <div id="firebaseStatus"></div>
-    <div id="tourList"></div>
   </div>
 
-  <!-- Create Tournament -->
+  <!-- Tournament Tabs Screen -->
 
-  <div id="createScreen" class="hidden">
+  <div id="tourTabsScreen" class="hidden">
     <div style="margin-bottom: 1rem;">
-      <button class="btn" onclick="showHome()">← Back</button>
+      <button class="btn" onclick="backToTourList()">← Back</button>
     </div>
-    <div class="card">
-      <div class="card-title">Create Tournament</div>
-      <div style="margin-bottom: 12px;">
-        <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Name</label>
-        <input type="text" id="tourName" style="width: 100%;" placeholder="Tournament name"/>
-      </div>
-      <div style="margin-bottom: 12px;">
-        <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Date/Time</label>
-        <input type="datetime-local" id="tourDate" style="width: 100%; padding: 10px;"/>
-      </div>
-      <div style="margin-bottom: 12px;">
-        <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Add Players</label>
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-          <input type="text" id="playerInput" style="flex: 1;" placeholder="Player name"/>
-          <button class="btn" onclick="addPlayer()">Add</button>
-        </div>
-        <div class="plist" id="playerList"></div>
-        <div style="font-size: 12px; color: #888;" id="playerCount">0 players</div>
-      </div>
-      <button class="btn primary" onclick="createTournament()">Create Tournament</button>
-      <div id="createErr"></div>
-    </div>
-  </div>
-
-  <!-- Tournament Detail -->
-
-  <div id="detailScreen" class="hidden">
-    <div style="margin-bottom: 1rem;">
-      <button class="btn" onclick="showHome()">← Back</button>
-    </div>
-    <div class="card">
-      <div class="card-title" id="detailTitle"></div>
-      <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
-        <button class="tab-btn active" onclick="showTab('scores')">Scores</button>
-        <button class="tab-btn" onclick="showTab('rankings')">Live Rankings</button>
-        <button class="tab-btn" onclick="showTab('pools')">Pools</button>
-      </div>
 
 ```
-  <!-- Scores Tab -->
-  <div id="scoresTab">
-    <div id="gameStatusSection"></div>
-    <div style="margin-bottom: 1rem; display: flex; gap: 8px; align-items: center;" id="finalizeSection" style="display: none;">
-      <button class="btn primary" id="r1FinalizeBtn" onclick="finalizeRound()">Finalize Round 1 & Generate Round 2</button>
-      <span style="font-size: 12px; color: #16a34a; font-weight: 600;">✓ All Round 1 games complete</span>
+<div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
+  <button class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
+  <button class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
+  <button class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
+</div>
+
+<!-- Setup Tab -->
+<div id="setupTab">
+  <div class="card">
+    <div class="card-title">Tournament Details</div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Name</label>
+      <input type="text" id="tourName" placeholder="Tournament name"/>
     </div>
-    <div id="round2StatusSection"></div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Date/Time</label>
+      <input type="datetime-local" id="tourDate"/>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Add Players</label>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <input type="text" id="playerInput" placeholder="Player name"/>
+        <button class="btn" onclick="addPlayer()">Add</button>
+      </div>
+      <div class="plist" id="playerList"></div>
+      <div style="font-size: 12px; color: #888;" id="playerCount">0 players</div>
+    </div>
+    <button class="btn primary" onclick="saveTournament()">Save Tournament</button>
+    <div id="setupErr"></div>
+  </div>
+</div>
+
+<!-- Round 1 Tab -->
+<div id="r1Tab" class="hidden">
+  <div class="card">
+    <div class="card-title">Round 1 - Live Scoring</div>
+    <button class="btn primary" id="genR1Btn" onclick="generateR1Pools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
+    <div id="r1PoolsStatus"></div>
     <table class="score-table">
       <thead>
-        <tr><th>Round</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
+        <tr><th>Pool</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th></tr>
       </thead>
-      <tbody id="scoresList"></tbody>
+      <tbody id="r1ScoresList"></tbody>
     </table>
+    <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
   </div>
+</div>
 
-  <!-- Rankings Tab -->
-  <div id="rankingsTab" class="hidden">
+<!-- Round 2 Tab -->
+<div id="r2Tab" class="hidden">
+  <div class="card">
+    <div class="card-title">Round 2 - Live Scoring</div>
+    <button class="btn primary" id="genR2Btn" onclick="generateR2Pools()" style="margin-bottom: 1rem; display: none;">Generate Round 2 Pools</button>
+    <div id="r2PoolsStatus"></div>
     <table class="score-table">
       <thead>
-        <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
+        <tr><th>Pool</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th></tr>
       </thead>
-      <tbody id="rankingsList"></tbody>
+      <tbody id="r2ScoresList"></tbody>
     </table>
-  </div>
-
-  <!-- Pools Tab -->
-  <div id="poolsTab" class="hidden">
-    <button class="btn primary" onclick="generatePools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
-    <div id="r1PoolsList" class="pool-grid"></div>
-    
-    <!-- Round 2 Pools -->
-    <div id="r2PoolsSection"></div>
+    <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
   </div>
 </div>
 ```
@@ -138,17 +136,17 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 </div>
 
-<!-- Firebase Scripts (load synchronously) -->
+<!-- Firebase Scripts -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-let currentPlayers = [];
-let currentTourId = null;
-let db = null;
 let firebaseReady = false;
+let db = null;
+let currentTourId = null;
+let currentPlayers = [];
 
 const firebaseConfig = {
   apiKey: "AIzaSyBQAx2DK8mm7lyGTqaqhWYfTTTBc3DznUg",
@@ -167,33 +165,113 @@ function initFirebase() {
     db = firebase.firestore();
     firebaseReady = true;
     console.log('Firebase initialized successfully');
-    document.getElementById('firebaseStatus').innerHTML = '<div class="success">✓ Firebase connected</div>';
   } catch (e) {
     console.error('Firebase error:', e);
     firebaseReady = false;
-    document.getElementById('firebaseStatus').innerHTML = '<div class="error">❌ Firebase error: ' + e.message + '</div>';
   }
 }
 
-function showScreen(name) {
-  document.getElementById('homeScreen').classList.toggle('hidden', name !== 'home');
-  document.getElementById('createScreen').classList.toggle('hidden', name !== 'create');
-  document.getElementById('detailScreen').classList.toggle('hidden', name !== 'detail');
+function backToTourList() {
+  document.getElementById('tourSelectScreen').classList.remove('hidden');
+  document.getElementById('tourTabsScreen').classList.add('hidden');
+  currentTourId = null;
+  loadTournamentList();
 }
 
-function showHome() {
-  showScreen('home');
-  loadTournaments();
+function showTab(tab) {
+  document.getElementById('setupTab').classList.toggle('hidden', tab !== 'setup');
+  document.getElementById('r1Tab').classList.toggle('hidden', tab !== 'r1');
+  document.getElementById('r2Tab').classList.toggle('hidden', tab !== 'r2');
+  
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', 
+      (i === 0 && tab === 'setup') || 
+      (i === 1 && tab === 'r1') || 
+      (i === 2 && tab === 'r2')
+    );
+  });
+  
+  if (tab === 'r1') loadR1Data();
+  if (tab === 'r2') loadR2Data();
 }
 
-function showCreateTour() {
+async function loadTournamentList() {
+  try {
+    if (!firebaseReady || !db) return;
+    
+    const snap = await db.collection('tournaments').get();
+    let html = '';
+    snap.forEach(doc => {
+      const data = doc.data();
+      html += `
+        <div class="tour-item" onclick="openTournament('${doc.id}')">
+          <div style="font-weight: 600;">${data.name}</div>
+          <div style="font-size: 11px; color: #666;">${data.playerCount} players</div>
+        </div>
+      `;
+    });
+    
+    if (!html) html = '<div style="padding: 12px; color: #aaa; text-align: center;">No tournaments yet</div>';
+    document.getElementById('tourListContainer').innerHTML = html;
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
+
+function showSetup(tourId) {
+  currentTourId = tourId;
   currentPlayers = [];
+  
+  document.getElementById('tourSelectScreen').classList.add('hidden');
+  document.getElementById('tourTabsScreen').classList.remove('hidden');
+  
+  // Reset form
   document.getElementById('tourName').value = '';
   document.getElementById('tourDate').value = '';
   document.getElementById('playerInput').value = '';
-  document.getElementById('createErr').innerHTML = '';
+  document.getElementById('setupErr').innerHTML = '';
   updatePlayerList();
-  showScreen('create');
+  
+  // Show setup tab
+  showTab('setup');
+  
+  // Load existing tournament if editing
+  if (tourId) {
+    loadTournamentData(tourId);
+  }
+}
+
+async function loadTournamentData(tourId) {
+  try {
+    if (!firebaseReady || !db) return;
+    
+    const doc = await db.collection('tournaments').doc(tourId).get();
+    const data = doc.data();
+    
+    document.getElementById('tourName').value = data.name;
+    document.getElementById('tourDate').value = data.dateTime;
+    currentPlayers = data.players || [];
+    updatePlayerList();
+    
+    // Show tabs based on progress
+    if (data.poolsJson) {
+      document.getElementById('r1TabBtn').style.display = 'block';
+      if (!data.r1Finalized) {
+        showTab('r1');
+      }
+    }
+    
+    if (data.r2poolsJson) {
+      document.getElementById('r2TabBtn').style.display = 'block';
+    }
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
+
+async function openTournament(tourId) {
+  currentTourId = tourId;
+  showSetup(tourId);
 }
 
 function addPlayer() {
@@ -218,11 +296,11 @@ function removePlayer(i) {
   updatePlayerList();
 }
 
-async function createTournament() {
+async function saveTournament() {
   const name = document.getElementById('tourName').value.trim();
   const dateInput = document.getElementById('tourDate').value;
+  const errEl = document.getElementById('setupErr');
   
-  const errEl = document.getElementById('createErr');
   errEl.innerHTML = '';
   
   if (!name || !dateInput) {
@@ -238,16 +316,13 @@ async function createTournament() {
   const date = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' at ' + 
                dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-  const tourId = Math.random().toString(36).substring(2, 8).toUpperCase();
-  
   try {
-    if (!firebaseReady || !db) {
-      errEl.innerHTML = '<div class="error">Firebase not connected</div>';
-      return;
+    if (!currentTourId) {
+      currentTourId = Math.random().toString(36).substring(2, 8).toUpperCase();
     }
 
-    await db.collection('tournaments').doc(tourId).set({
-      id: tourId,
+    await db.collection('tournaments').doc(currentTourId).set({
+      id: currentTourId,
       name: name,
       date: date,
       dateTime: dateInput,
@@ -255,379 +330,19 @@ async function createTournament() {
       playerCount: currentPlayers.length,
       createdAt: new Date(),
       status: 'setup'
-    });
+    }, { merge: true });
     
-    errEl.innerHTML = '<div class="success">✓ Tournament created! ID: ' + tourId + '</div>';
-    setTimeout(() => showHome(), 1500);
+    errEl.innerHTML = '<div class="success">✓ Tournament saved!</div>';
+    
+    // Enable R1 tab
+    document.getElementById('r1TabBtn').style.display = 'block';
+    
+    setTimeout(() => {
+      showTab('r1');
+    }, 1000);
   } catch (e) {
     console.error('Error:', e);
     errEl.innerHTML = '<div class="error">Error: ' + e.message + '</div>';
-  }
-}
-
-async function loadTournaments() {
-  try {
-    if (!firebaseReady || !db) {
-      document.getElementById('tourList').innerHTML = '<div class="error">Firebase not ready</div>';
-      return;
-    }
-
-    const snap = await db.collection('tournaments').get();
-    let html = '';
-    snap.forEach(doc => {
-      const data = doc.data();
-      html += `
-        <div class="card" style="cursor: pointer;" onclick="openTour('${doc.id}')">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <div class="card-title">${data.name}</div>
-              <div style="font-size: 12px; color: #666;">${data.playerCount} players · ${data.date}</div>
-            </div>
-            <div style="font-size: 12px; background: #fee2e2; color: #b91c1c; padding: 4px 8px; border-radius: 6px; font-weight: 600;">${data.status || 'setup'}</div>
-          </div>
-        </div>
-      `;
-    });
-    if (!html) html = '<div class="card"><p style="text-align: center; color: #aaa;">No tournaments yet</p></div>';
-    document.getElementById('tourList').innerHTML = html;
-  } catch (e) {
-    console.error('Error:', e);
-    document.getElementById('tourList').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
-  }
-}
-
-async function openTour(tourId) {
-  currentTourId = tourId;
-  try {
-    if (!firebaseReady || !db) return;
-    const doc = await db.collection('tournaments').doc(tourId).get();
-    const data = doc.data();
-    document.getElementById('detailTitle').textContent = data.name + ' (' + data.playerCount + ' players)';
-    showScreen('detail');
-    loadScores();
-    
-    // Load finalized rankings if they exist
-    if (data.r1Finalized && data.r1RankingsJson) {
-      const ranked = JSON.parse(data.r1RankingsJson);
-      const pools = JSON.parse(data.poolsJson);
-      const poolSizes = [...new Set(pools.map(p => p.length))];
-      const isEven = poolSizes.length === 1;
-      
-      // Display the saved rankings
-      let standingsHtml = '<table class="score-table"><thead><tr><th>#</th><th>Player</th>';
-      if (isEven) {
-        standingsHtml += '<th>W</th><th>L</th>';
-      }
-      standingsHtml += '<th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>';
-      
-      ranked.forEach((r, i) => {
-        standingsHtml += `<tr><td>${i + 1}</td><td style="font-weight: 600;">${r.name}</td>`;
-        if (isEven) {
-          standingsHtml += `<td>${r.wins}W</td><td>${r.losses}L</td>`;
-        }
-        standingsHtml += `<td>${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
-      });
-      
-      standingsHtml += '</tbody></table>';
-      
-      // Just hide the finalize button since R1 is already finalized
-      document.getElementById('finalizeSection').style.display = 'none';
-    }
-  } catch (e) {
-    console.error('Error:', e);
-  }
-}
-
-async function loadScores() {
-  try {
-    if (!firebaseReady || !db) return;
-    
-    const doc = await db.collection('tournaments').doc(currentTourId).get();
-    const data = doc.data();
-    const status = data.status;
-    const currentRound = status === 'round2' ? 2 : 1;
-    
-    // Get pools
-    const poolsJson = data.poolsJson;
-    let pools = [];
-    if (poolsJson) {
-      pools = JSON.parse(poolsJson);
-    }
-    
-    // Get all scores
-    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
-    const scoresByGame = {};
-    scoresSnap.forEach(scoreDoc => {
-      const score = scoreDoc.data();
-      scoresByGame[score.gameId] = score;
-    });
-
-    // Generate expected games for each pool
-    const poolGames = {};
-    let gameCounter = 1;
-    
-    pools.forEach((pool, poolIdx) => {
-      const poolLetter = String.fromCharCode(65 + poolIdx);
-      poolGames[poolLetter] = [];
-      
-      if (pool.length === 4) {
-        poolGames[poolLetter] = [
-          { id: `g${gameCounter++}`, t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
-          { id: `g${gameCounter++}`, t1: [pool[0], pool[2]], t2: [pool[1], pool[3]] },
-          { id: `g${gameCounter++}`, t1: [pool[0], pool[3]], t2: [pool[1], pool[2]] }
-        ];
-      } else if (pool.length === 5) {
-        poolGames[poolLetter] = [
-          { id: `g${gameCounter++}`, t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
-          { id: `g${gameCounter++}`, t1: [pool[0], pool[2]], t2: [pool[1], pool[4]] },
-          { id: `g${gameCounter++}`, t1: [pool[0], pool[3]], t2: [pool[2], pool[4]] },
-          { id: `g${gameCounter++}`, t1: [pool[0], pool[4]], t2: [pool[1], pool[3]] },
-          { id: `g${gameCounter++}`, t1: [pool[1], pool[2]], t2: [pool[3], pool[4]] }
-        ];
-      }
-    });
-
-    // Build R1 pool status HTML
-    let poolStatusHtml = '<div style="margin-bottom: 1.5rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 12px; background: #fef2f2; border-left: 4px solid #dc2626;">Round 1 - Pool Status</div>';
-    let allGamesComplete = true;
-    
-    Object.keys(poolGames).sort().forEach(poolLetter => {
-      const games = poolGames[poolLetter];
-      let completedGames = 0;
-      
-      poolStatusHtml += `<div style="margin-bottom: 1rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #dc2626;">`;
-      poolStatusHtml += `<div style="font-weight: 600; margin-bottom: 0.5rem;">Pool ${poolLetter}</div>`;
-      poolStatusHtml += `<div style="font-size: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px;">`;
-      
-      games.forEach(game => {
-        const score = scoresByGame[game.id];
-        const isComplete = !!score;
-        if (isComplete) completedGames++;
-        else allGamesComplete = false;
-        
-        const status = isComplete ? '✓ Complete' : '○ Pending';
-        const statusColor = isComplete ? '#16a34a' : '#f59e0b';
-        const bgColor = isComplete ? '#f0fdf4' : '#fffbeb';
-        
-        poolStatusHtml += `
-          <div style="padding: 8px; background: ${bgColor}; border-radius: 6px; border-left: 3px solid ${statusColor}; font-size: 11px;">
-            <div style="font-weight: 500; color: ${statusColor};">${status}</div>
-            <div style="margin-top: 4px; color: #666;">
-              ${game.t1.join(' & ')} vs ${game.t2.join(' & ')}
-              ${isComplete ? `<br/><strong>${score.s1} - ${score.s2}</strong>` : ''}
-            </div>
-          </div>
-        `;
-      });
-      
-      poolStatusHtml += `</div>`;
-      poolStatusHtml += `<div style="margin-top: 0.5rem; font-size: 11px; color: #666;">${completedGames}/${games.length} games complete</div>`;
-      poolStatusHtml += `</div>`;
-    });
-    
-    poolStatusHtml += '</div>';
-    document.getElementById('gameStatusSection').innerHTML = poolStatusHtml;
-    
-    // Show/hide finalize button based on R1 completion
-    const finalizeSection = document.getElementById('finalizeSection');
-    if (allGamesComplete && pools.length > 0) {
-      finalizeSection.style.display = 'flex';
-    } else {
-      finalizeSection.style.display = 'none';
-    }
-    
-    // Check if R2 exists and show R2 pool status
-    const r2poolsJson = data.r2poolsJson;
-    if (r2poolsJson) {
-      const r2pools = JSON.parse(r2poolsJson);
-      let r2StatusHtml = '<div style="margin-bottom: 1.5rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 12px; background: #f0fdf4; border-left: 4px solid #16a34a;">Round 2 - Pool Status</div>';
-      
-      r2pools.forEach((pool, idx) => {
-        const poolLetter = String.fromCharCode(65 + idx);
-        r2StatusHtml += `<div style="margin-bottom: 1rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #16a34a;">`;
-        r2StatusHtml += `<div style="font-weight: 600; margin-bottom: 0.5rem;">Pool ${poolLetter}</div>`;
-        r2StatusHtml += `<div style="font-size: 12px; color: #666;">${pool.join(', ')}</div>`;
-        r2StatusHtml += `</div>`;
-      });
-      
-      r2StatusHtml += '</div>';
-      document.getElementById('round2StatusSection').innerHTML = r2StatusHtml;
-    } else {
-      document.getElementById('round2StatusSection').innerHTML = '';
-    }
-
-    // Load scores table
-    let html = '';
-    scoresSnap.forEach(scoreDoc => {
-      const scoreData = scoreDoc.data();
-      const time = scoreData.submittedAt ? new Date(scoreData.submittedAt.toDate()).toLocaleTimeString() : '—';
-      const round = scoreData.round || 1;
-      html += `
-        <tr>
-          <td style="font-weight: 600;">R${round}</td>
-          <td>${scoreData.t1 ? scoreData.t1.join(' & ') : '—'}</td>
-          <td style="font-weight: 600;">${scoreData.s1 || 0} - ${scoreData.s2 || 0}</td>
-          <td>${scoreData.t2 ? scoreData.t2.join(' & ') : '—'}</td>
-          <td style="font-size: 11px;">${time}</td>
-        </tr>
-      `;
-    });
-    if (!html) html = '<tr><td colspan="5" style="text-align: center; color: #aaa;">No scores yet</td></tr>';
-    document.getElementById('scoresList').innerHTML = html;
-  } catch (e) {
-    console.error('Error:', e);
-  }
-}
-
-function showTab(tab) {
-  document.getElementById('scoresTab').classList.toggle('hidden', tab !== 'scores');
-  document.getElementById('rankingsTab').classList.toggle('hidden', tab !== 'rankings');
-  document.getElementById('poolsTab').classList.toggle('hidden', tab !== 'pools');
-  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', 
-      (i === 0 && tab === 'scores') || 
-      (i === 1 && tab === 'rankings') || 
-      (i === 2 && tab === 'pools')
-    );
-  });
-  if (tab === 'rankings') loadRankings();
-  if (tab === 'pools') {
-    loadPools();
-    loadRankings(); // Also load rankings for R2 generation
-  }
-}
-
-async function finalizeRound() {
-  try {
-    if (!firebaseReady || !db || !currentTourId) {
-      alert('Error: Firebase not ready');
-      return;
-    }
-
-    const result = confirm('Finalize Round 1? This will lock scores and show final rankings.');
-    if (!result) return;
-
-    // Get current tournament
-    const doc = await db.collection('tournaments').doc(currentTourId).get();
-    const data = doc.data();
-    
-    // Calculate final rankings for R1
-    const players = data.players || [];
-    const playerStats = {};
-    players.forEach(p => {
-      playerStats[p] = { wins: 0, losses: 0, pf: 0, pa: 0 };
-    });
-
-    // Get all R1 scores
-    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
-    scoresSnap.forEach(scoreDoc => {
-      const score = scoreDoc.data();
-      const round = score.round || 1;
-      
-      if (round === 1 && score.t1 && score.t2) {
-        score.t1.forEach(p => {
-          if (playerStats[p]) {
-            playerStats[p].pf += score.s1;
-            playerStats[p].pa += score.s2;
-            if (score.s1 > score.s2) playerStats[p].wins++;
-            else if (score.s1 < score.s2) playerStats[p].losses++;
-          }
-        });
-        
-        score.t2.forEach(p => {
-          if (playerStats[p]) {
-            playerStats[p].pf += score.s2;
-            playerStats[p].pa += score.s1;
-            if (score.s2 > score.s1) playerStats[p].wins++;
-            else if (score.s2 < score.s1) playerStats[p].losses++;
-          }
-        });
-      }
-    });
-
-    // Check if pools are even sized
-    const poolsJson = data.poolsJson;
-    const pools = JSON.parse(poolsJson);
-    const poolSizes = [...new Set(pools.map(p => p.length))];
-    const isEven = poolSizes.length === 1;
-
-    // Rank players
-    const ranked = players.map(p => ({
-      name: p,
-      ...playerStats[p],
-      diff: playerStats[p].pf - playerStats[p].pa
-    }));
-
-    if (isEven) {
-      ranked.sort((a, b) => {
-        if (a.wins !== b.wins) return b.wins - a.wins;
-        if (a.losses !== b.losses) return a.losses - b.losses;
-        return b.diff - a.diff;
-      });
-    } else {
-      ranked.sort((a, b) => b.diff - a.diff);
-    }
-
-    // Display standings
-    let standingsHtml = '<table class="score-table"><thead><tr><th>#</th><th>Player</th>';
-    if (isEven) {
-      standingsHtml += '<th>W</th><th>L</th>';
-    }
-    standingsHtml += '<th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>';
-    
-    ranked.forEach((r, i) => {
-      standingsHtml += `<tr><td>${i + 1}</td><td style="font-weight: 600;">${r.name}</td>`;
-      if (isEven) {
-        standingsHtml += `<td>${r.wins}W</td><td>${r.losses}L</td>`;
-      }
-      standingsHtml += `<td>${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
-    });
-    
-    standingsHtml += '</tbody></table>';
-    
-    // Save rankings to Firebase so they persist
-    const r1RankingsJson = JSON.stringify(ranked);
-    await db.collection('tournaments').doc(currentTourId).update({
-      r1RankingsJson: r1RankingsJson,
-      r1Finalized: true
-    });
-    
-    console.log('Round 1 finalized. Now generating Round 2 pools...');
-    
-    // Generate Round 2 pools automatically
-    const r2pools = [];
-    const maxPoolSize = 5;
-    const numPools = Math.ceil(players.length / maxPoolSize);
-    
-    for (let i = 0; i < numPools; i++) {
-      r2pools.push([]);
-    }
-
-    ranked.forEach((player, idx) => {
-      r2pools[idx % numPools].push(player.name);
-    });
-
-    console.log('Generated R2 pools:', r2pools);
-    const r2poolsJson = JSON.stringify(r2pools);
-
-    // Save Round 2 pools
-    await db.collection('tournaments').doc(currentTourId).update({
-      r2poolsJson: r2poolsJson,
-      status: 'round2'
-    });
-
-    console.log('Round 2 saved and posted to players');
-    
-    // Hide the finalize button
-    document.getElementById('finalizeSection').style.display = 'none';
-    
-    // Reload scores to show R2 pool status
-    await loadScores();
-    
-    alert('✓ Round 1 Finalized!\n✓ Round 2 Pools Generated!\n✓ Posted to Players!');
-  } catch (e) {
-    console.error('Error finalizing round:', e);
-    alert('Error: ' + e.message);
   }
 }
 
@@ -640,183 +355,153 @@ function shuffle(arr) {
   return a;
 }
 
-async function generatePools() {
+async function generateR1Pools() {
   try {
-    if (!firebaseReady || !db) {
-      alert('Firebase not ready');
-      return;
-    }
+    if (!firebaseReady || !db || !currentTourId) return;
     
-    if (!currentTourId) {
-      alert('No tournament selected');
-      return;
-    }
-
-    // Check if pools already exist
     const doc = await db.collection('tournaments').doc(currentTourId).get();
-    if (doc.data().poolsJson) {
-      alert('Pools already generated! Cannot regenerate.');
-      return;
-    }
-
-    console.log('Generating pools for:', currentTourId);
     const data = doc.data();
-    const players = data.players;
     
-    if (!players || players.length < 4) {
-      alert('Need at least 4 players');
+    if (data.poolsJson) {
+      alert('Pools already generated!');
       return;
     }
-
+    
+    const players = data.players;
     const pools = [];
     const shuffled = shuffle(players);
     const maxPoolSize = 5;
     const numPools = Math.ceil(players.length / maxPoolSize);
-    
-    console.log('Creating', numPools, 'pools');
     
     for (let i = 0; i < numPools; i++) {
       pools.push([]);
     }
     shuffled.forEach((p, i) => pools[i % numPools].push(p));
     
-    console.log('Pools created:', pools);
-
-    // Convert pools to JSON string because Firebase doesn't support nested arrays
     const poolsJson = JSON.stringify(pools);
-
     await db.collection('tournaments').doc(currentTourId).update({
       poolsJson: poolsJson,
       status: 'pools_created'
     });
     
-    console.log('Pools saved to Firebase');
-    alert('✓ Pools generated!');
-    loadPools();
+    alert('✓ Round 1 Pools generated!');
+    document.getElementById('genR1Btn').style.display = 'none';
+    loadR1Data();
   } catch (e) {
-    console.error('Error generating pools:', e);
-    alert('Error generating pools: ' + e.message);
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
   }
 }
 
-async function loadPools() {
+async function loadR1Data() {
   try {
-    if (!firebaseReady || !db) {
-      console.error('Firebase not ready');
-      return;
-    }
+    if (!firebaseReady || !db || !currentTourId) return;
     
-    if (!currentTourId) {
-      console.error('No tournament ID');
-      return;
-    }
-
-    console.log('Loading pools for:', currentTourId);
     const doc = await db.collection('tournaments').doc(currentTourId).get();
-    
-    if (!doc.data()) {
-      console.error('Tournament not found');
-      document.getElementById('r1PoolsList').innerHTML = '<p style="color: #aaa;">Tournament not found</p>';
-      return;
-    }
-
-    // Load R1 Pools
-    const poolsJson = doc.data().poolsJson;
-    let r1Html = '';
-    if (!poolsJson) {
-      r1Html = '<p style="color: #aaa;">No Round 1 pools yet</p>';
-    } else {
-      const pools = JSON.parse(poolsJson);
-      pools.forEach((pool, i) => {
-        r1Html += `
-          <div class="card">
-            <div style="font-weight: 600; margin-bottom: 8px;">Round 1 - Pool ${String.fromCharCode(65 + i)}</div>
-            <div style="font-size: 13px; color: #666; line-height: 2;">
-              ${pool.map(p => `• ${p}`).join('<br/>')}
-            </div>
-          </div>
-        `;
-      });
-    }
-    document.getElementById('r1PoolsList').innerHTML = r1Html;
-
-    // Load R2 Pools if they exist
-    const r2poolsJson = doc.data().r2poolsJson;
-    let r2Html = '';
-    if (r2poolsJson) {
-      const r2pools = JSON.parse(r2poolsJson);
-      r2Html = '<div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0efe9;">';
-      r2Html += '<div style="font-weight: 700; font-size: 15px; margin-bottom: 1rem;">Round 2 Pools</div>';
-      r2Html += '<div class="pool-grid">';
-      r2pools.forEach((pool, i) => {
-        r2Html += `
-          <div class="card">
-            <div style="font-weight: 600; margin-bottom: 8px;">Round 2 - Pool ${String.fromCharCode(65 + i)}</div>
-            <div style="font-size: 13px; color: #666; line-height: 2;">
-              ${pool.map(p => `• ${p}`).join('<br/>')}
-            </div>
-          </div>
-        `;
-      });
-      r2Html += '</div></div>';
-    }
-    document.getElementById('r2PoolsSection').innerHTML = r2Html;
-  } catch (e) {
-    console.error('Error loading pools:', e);
-    document.getElementById('r1PoolsList').innerHTML = '<p style="color: #dc2626;">Error: ' + e.message + '</p>';
-  }
-}
-
-async function generateRound2() {
-  try {
-    if (!firebaseReady || !db) {
-      alert('Firebase not ready');
-      return;
-    }
-    
-    if (!currentTourId) {
-      alert('No tournament selected');
-      return;
-    }
-
-    console.log('Generating Round 2 for:', currentTourId);
-    const doc = await db.collection('tournaments').doc(currentTourId).get();
-    
-    if (!doc.data()) {
-      alert('Tournament not found');
-      return;
-    }
-
     const data = doc.data();
-    
-    // Check if Round 2 already exists
-    if (data.r2poolsJson) {
-      alert('Round 2 pools already generated! Cannot regenerate.');
-      return;
-    }
-    
     const poolsJson = data.poolsJson;
     
     if (!poolsJson) {
-      alert('No Round 1 pools yet');
+      document.getElementById('r1PoolsStatus').innerHTML = '<p style="color: #aaa;">Pools not yet generated</p>';
+      document.getElementById('r1ScoresList').innerHTML = '';
+      document.getElementById('genR1Btn').style.display = 'block';
       return;
     }
+    
+    const pools = JSON.parse(poolsJson);
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    const scores = {};
+    scoresSnap.forEach(scoreDoc => {
+      scores[scoreDoc.id] = scoreDoc.data();
+    });
+    
+    // Show pool status
+    let statusHtml = '';
+    let allComplete = true;
+    let gameCounter = 1;
+    
+    pools.forEach((pool, idx) => {
+      const poolLetter = String.fromCharCode(65 + idx);
+      const expectedGames = pool.length === 4 ? 3 : 5;
+      let completedGames = 0;
+      
+      statusHtml += `<div class="pool-status">Pool ${poolLetter} (${pool.join(', ')})<br/>`;
+      
+      for (let i = 1; i <= expectedGames; i++) {
+        const gameId = `g${gameCounter}`;
+        if (scores[gameId]) completedGames++;
+        else allComplete = false;
+        gameCounter++;
+      }
+      
+      statusHtml += `${completedGames}/${expectedGames} games complete</div>`;
+    });
+    
+    document.getElementById('r1PoolsStatus').innerHTML = statusHtml;
+    
+    // Show scores
+    let scoresHtml = '';
+    let currentGameId = 'g1';
+    let gameNum = 1;
+    gameCounter = 1;
+    
+    pools.forEach((pool, idx) => {
+      const poolLetter = String.fromCharCode(65 + idx);
+      const expectedGames = pool.length === 4 ? 3 : 5;
+      
+      for (let i = 1; i <= expectedGames; i++) {
+        const gameId = `g${gameCounter}`;
+        const score = scores[gameId];
+        const status = score ? 'complete' : 'pending';
+        const statusText = score ? '✓ Complete' : '○ Pending';
+        
+        scoresHtml += `
+          <tr>
+            <td>${poolLetter}</td>
+            <td>Game ${i}</td>
+            <td>${score ? (score.t1 ? score.t1.join(' & ') : '—') : '—'}</td>
+            <td style="text-align: center;"><span class="game-status ${status}">${statusText}</span></td>
+            <td>${score ? (score.t2 ? score.t2.join(' & ') : '—') : '—'}</td>
+          </tr>
+        `;
+        gameCounter++;
+      }
+    });
+    
+    document.getElementById('r1ScoresList').innerHTML = scoresHtml;
+    
+    // Show finalize button if all complete
+    if (allComplete && pools.length > 0) {
+      document.getElementById('finalizeR1Btn').style.display = 'block';
+    } else {
+      document.getElementById('finalizeR1Btn').style.display = 'none';
+    }
+    
+    // Auto refresh
+    setTimeout(() => loadR1Data(), 5000);
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
 
-    const r1pools = JSON.parse(poolsJson);
+async function finalizeR1() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const result = confirm('Finalize Round 1 and generate Round 2 Pools?');
+    if (!result) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
     const players = data.players;
     
-    console.log('Starting R2 generation with players:', players);
-    
-    // Calculate stats for each player from Round 1 scores
+    // Calculate rankings
     const playerStats = {};
     players.forEach(p => {
       playerStats[p] = { wins: 0, losses: 0, pf: 0, pa: 0 };
     });
 
-    // Get all scores from Round 1
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
-    console.log('Found', scoresSnap.size, 'scores');
-    
     scoresSnap.forEach(scoreDoc => {
       const score = scoreDoc.data();
       if (score.t1 && score.t2) {
@@ -825,161 +510,20 @@ async function generateRound2() {
             playerStats[p].pf += score.s1;
             playerStats[p].pa += score.s2;
             if (score.s1 > score.s2) playerStats[p].wins++;
-            else if (score.s1 < score.s2) playerStats[p].losses++;
+            else playerStats[p].losses++;
           }
         });
-        
         score.t2.forEach(p => {
           if (playerStats[p]) {
             playerStats[p].pf += score.s2;
             playerStats[p].pa += score.s1;
             if (score.s2 > score.s1) playerStats[p].wins++;
-            else if (score.s2 < score.s1) playerStats[p].losses++;
+            else playerStats[p].losses++;
           }
         });
       }
     });
 
-    console.log('Player stats:', playerStats);
-
-    // Check if pools are even sized
-    const poolSizes = [...new Set(r1pools.map(p => p.length))];
-    const isEven = poolSizes.length === 1;
-
-    // Rank players
-    const ranked = players.map(p => ({
-      name: p,
-      ...playerStats[p],
-      diff: playerStats[p].pf - playerStats[p].pa
-    }));
-
-    if (isEven) {
-      // Even pools - rank by wins, then losses, then diff
-      ranked.sort((a, b) => {
-        if (a.wins !== b.wins) return b.wins - a.wins;
-        if (a.losses !== b.losses) return a.losses - b.losses;
-        return b.diff - a.diff;
-      });
-    } else {
-      // Uneven pools - rank by point differential only
-      ranked.sort((a, b) => b.diff - a.diff);
-    }
-
-    console.log('Ranked players:', ranked);
-
-    // Display standings
-    let standingsHtml = '<table class="score-table"><thead><tr><th>#</th><th>Player</th>';
-    if (isEven) {
-      standingsHtml += '<th>W</th><th>L</th>';
-    }
-    standingsHtml += '<th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>';
-    
-    ranked.forEach((r, i) => {
-      standingsHtml += `<tr><td>${i + 1}</td><td style="font-weight: 600;">${r.name}</td>`;
-      if (isEven) {
-        standingsHtml += `<td>${r.wins}W</td><td>${r.losses}L</td>`;
-      }
-      standingsHtml += `<td>${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
-    });
-    
-    standingsHtml += '</tbody></table>';
-    document.getElementById('r1RankingsTable').innerHTML = standingsHtml;
-
-    // Generate Round 2 pools
-    const r2pools = [];
-    const maxPoolSize = 5;
-    const numPools = Math.ceil(players.length / maxPoolSize);
-    
-    for (let i = 0; i < numPools; i++) {
-      r2pools.push([]);
-    }
-
-    // Snake draft - distribute ranked players
-    ranked.forEach((player, idx) => {
-      r2pools[idx % numPools].push(player.name);
-    });
-
-    console.log('Generated R2 pools:', r2pools);
-    const r2poolsJson = JSON.stringify(r2pools);
-    console.log('R2 JSON string:', r2poolsJson);
-
-    // Save Round 2 pools
-    await db.collection('tournaments').doc(currentTourId).update({
-      r2poolsJson: r2poolsJson,
-      status: 'round2'
-    });
-
-    console.log('Round 2 saved to Firebase successfully');
-    alert('✓ Round 2 pools generated!');
-  } catch (e) {
-    console.error('Error generating Round 2:', e);
-    alert('Error: ' + e.message);
-  }
-}
-
-async function resetRound2() {
-  if (!confirm('Are you sure you want to reset Round 2? This will delete all Round 2 data.')) {
-    return;
-  }
-  
-  try {
-    if (!firebaseReady || !db || !currentTourId) return;
-    
-    console.log('Resetting Round 2 for:', currentTourId);
-    await db.collection('tournaments').doc(currentTourId).update({
-      r2poolsJson: firebase.firestore.FieldValue.delete(),
-      status: 'pools_created'
-    });
-    
-    console.log('Round 2 reset');
-    alert('✓ Round 2 reset!');
-    await loadScores();
-  } catch (e) {
-    console.error('Error resetting Round 2:', e);
-    alert('Error: ' + e.message);
-  }
-}
-
-async function loadRankings() {
-  try {
-    if (!firebaseReady || !db || !currentTourId) return;
-    
-    const doc = await db.collection('tournaments').doc(currentTourId).get();
-    const data = doc.data();
-    const players = data.players || [];
-    
-    // Calculate stats for each player
-    const playerStats = {};
-    players.forEach(p => {
-      playerStats[p] = { wins: 0, losses: 0, pf: 0, pa: 0 };
-    });
-
-    // Get all scores
-    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
-    scoresSnap.forEach(doc => {
-      const score = doc.data();
-      if (score.t1 && score.t2) {
-        score.t1.forEach(p => {
-          if (playerStats[p]) {
-            playerStats[p].pf += score.s1;
-            playerStats[p].pa += score.s2;
-            if (score.s1 > score.s2) playerStats[p].wins++;
-            else if (score.s1 < score.s2) playerStats[p].losses++;
-          }
-        });
-        
-        score.t2.forEach(p => {
-          if (playerStats[p]) {
-            playerStats[p].pf += score.s2;
-            playerStats[p].pa += score.s1;
-            if (score.s2 > score.s1) playerStats[p].wins++;
-            else if (score.s2 < score.s1) playerStats[p].losses++;
-          }
-        });
-      }
-    });
-
-    // Rank players
     const ranked = players.map(p => ({
       name: p,
       ...playerStats[p],
@@ -990,21 +534,154 @@ async function loadRankings() {
       return b.diff - a.diff;
     });
 
-    let html = '';
-    ranked.forEach((r, i) => {
-      html += `<tr><td>${i + 1}</td><td style="font-weight: 600;">${r.name}</td><td>${r.wins}</td><td>${r.losses}</td><td>${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+    // Generate R2 pools
+    const r1pools = JSON.parse(data.poolsJson);
+    const r2pools = [];
+    const maxPoolSize = 5;
+    const numPools = Math.ceil(players.length / maxPoolSize);
+    
+    for (let i = 0; i < numPools; i++) {
+      r2pools.push([]);
+    }
+    ranked.forEach((player, idx) => {
+      r2pools[idx % numPools].push(player.name);
+    });
+
+    const r1RankingsJson = JSON.stringify(ranked);
+    const r2poolsJson = JSON.stringify(r2pools);
+
+    await db.collection('tournaments').doc(currentTourId).update({
+      r1RankingsJson: r1RankingsJson,
+      r1Finalized: true,
+      r2poolsJson: r2poolsJson,
+      status: 'round2'
+    });
+
+    alert('✓ Round 1 Finalized!\n✓ Round 2 Pools Generated!');
+    
+    // Enable R2 tab and switch to it
+    document.getElementById('r2TabBtn').style.display = 'block';
+    document.getElementById('finalizeR1Btn').style.display = 'none';
+    showTab('r2');
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+async function loadR2Data() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const r2poolsJson = data.r2poolsJson;
+    
+    if (!r2poolsJson) {
+      document.getElementById('r2PoolsStatus').innerHTML = '<p style="color: #aaa;">Round 2 not yet generated. Finalize Round 1 first.</p>';
+      document.getElementById('r2ScoresList').innerHTML = '';
+      document.getElementById('genR2Btn').style.display = 'none';
+      return;
+    }
+    
+    const r2pools = JSON.parse(r2poolsJson);
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    const scores = {};
+    scoresSnap.forEach(scoreDoc => {
+      scores[scoreDoc.id] = scoreDoc.data();
     });
     
-    document.getElementById('rankingsList').innerHTML = html;
+    // Show pool status
+    let statusHtml = '';
+    let allComplete = true;
+    let gameCounter = 1;
+    
+    r2pools.forEach((pool, idx) => {
+      const poolLetter = String.fromCharCode(65 + idx);
+      const expectedGames = pool.length === 4 ? 3 : 5;
+      let completedGames = 0;
+      
+      statusHtml += `<div class="pool-status">Pool ${poolLetter} (${pool.join(', ')})<br/>`;
+      
+      for (let i = 1; i <= expectedGames; i++) {
+        const gameId = `g${gameCounter}`;
+        if (scores[gameId]) completedGames++;
+        else allComplete = false;
+        gameCounter++;
+      }
+      
+      statusHtml += `${completedGames}/${expectedGames} games complete</div>`;
+    });
+    
+    document.getElementById('r2PoolsStatus').innerHTML = statusHtml;
+    
+    // Show scores
+    let scoresHtml = '';
+    gameCounter = 1;
+    
+    r2pools.forEach((pool, idx) => {
+      const poolLetter = String.fromCharCode(65 + idx);
+      const expectedGames = pool.length === 4 ? 3 : 5;
+      
+      for (let i = 1; i <= expectedGames; i++) {
+        const gameId = `g${gameCounter}`;
+        const score = scores[gameId];
+        const status = score ? 'complete' : 'pending';
+        const statusText = score ? '✓ Complete' : '○ Pending';
+        
+        scoresHtml += `
+          <tr>
+            <td>${poolLetter}</td>
+            <td>Game ${i}</td>
+            <td>${score ? (score.t1 ? score.t1.join(' & ') : '—') : '—'}</td>
+            <td style="text-align: center;"><span class="game-status ${status}">${statusText}</span></td>
+            <td>${score ? (score.t2 ? score.t2.join(' & ') : '—') : '—'}</td>
+          </tr>
+        `;
+        gameCounter++;
+      }
+    });
+    
+    document.getElementById('r2ScoresList').innerHTML = scoresHtml;
+    
+    // Show finalize button if all complete
+    if (allComplete && r2pools.length > 0) {
+      document.getElementById('finalizeR2Btn').style.display = 'block';
+    } else {
+      document.getElementById('finalizeR2Btn').style.display = 'none';
+    }
+    
+    // Auto refresh
+    setTimeout(() => loadR2Data(), 5000);
   } catch (e) {
     console.error('Error:', e);
   }
 }
 
-// Initialize Firebase when page loads
+async function finalizeR2() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const result = confirm('Finalize Round 2?');
+    if (!result) return;
+    
+    await db.collection('tournaments').doc(currentTourId).update({
+      r2Finalized: true,
+      status: 'complete'
+    });
+
+    alert('✓ Tournament Complete!');
+    document.getElementById('finalizeR2Btn').style.display = 'none';
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+// Initialize
 window.addEventListener('load', () => {
   initFirebase();
-  loadTournaments();
+  loadTournamentList();
 });
 </script>
 
