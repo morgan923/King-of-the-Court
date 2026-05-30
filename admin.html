@@ -161,7 +161,9 @@ const firebaseConfig = {
 function initFirebase() {
   try {
     console.log('Initializing Firebase...');
-    firebase.initializeApp(firebaseConfig);
+    if (firebase.apps.length === 0) {
+      firebase.initializeApp(firebaseConfig);
+    }
     db = firebase.firestore();
     firebaseReady = true;
     console.log('Firebase initialized successfully');
@@ -317,9 +319,17 @@ async function saveTournament() {
                dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
   try {
+    if (!firebaseReady || !db) {
+      console.error('Firebase not ready. firebaseReady:', firebaseReady, 'db:', db);
+      errEl.innerHTML = '<div class="error">Firebase not ready. Please refresh page.</div>';
+      return;
+    }
+
     if (!currentTourId) {
       currentTourId = Math.random().toString(36).substring(2, 8).toUpperCase();
     }
+
+    console.log('Saving tournament:', currentTourId, name, currentPlayers.length, 'players');
 
     await db.collection('tournaments').doc(currentTourId).set({
       id: currentTourId,
@@ -332,6 +342,7 @@ async function saveTournament() {
       status: 'setup'
     }, { merge: true });
     
+    console.log('Tournament saved successfully');
     errEl.innerHTML = '<div class="success">✓ Tournament saved!</div>';
     
     // Enable R1 tab
@@ -341,7 +352,7 @@ async function saveTournament() {
       showTab('r1');
     }, 1000);
   } catch (e) {
-    console.error('Error:', e);
+    console.error('Error saving tournament:', e);
     errEl.innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
 }
