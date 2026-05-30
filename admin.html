@@ -205,10 +205,33 @@ async function loadTournamentList() {
     let html = '';
     snap.forEach(doc => {
       const data = doc.data();
+      const status = data.status || 'setup';
+      
+      // Determine status badge
+      let statusBadge = '';
+      let statusColor = '';
+      
+      if (status === 'setup') {
+        statusBadge = '○ Setup';
+        statusColor = '#6b7280';
+      } else if (status === 'pools_created') {
+        statusBadge = '● R1 Active';
+        statusColor = '#f59e0b';
+      } else if (status === 'round2') {
+        statusBadge = '● R2 Active';
+        statusColor = '#3b82f6';
+      } else if (status === 'complete') {
+        statusBadge = '✓ Complete';
+        statusColor = '#16a34a';
+      }
+      
       html += `
         <div class="tour-item" onclick="openTournament('${doc.id}')">
-          <div style="font-weight: 600;">${data.name}</div>
-          <div style="font-size: 11px; color: #666;">${data.playerCount} players</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="font-weight: 600;">${data.name}</div>
+            <div style="font-size: 11px; background: ${statusColor}20; color: ${statusColor}; padding: 3px 8px; border-radius: 4px; font-weight: 600;">${statusBadge}</div>
+          </div>
+          <div style="font-size: 11px; color: #666;">${data.playerCount || 0} players · ${data.date || 'N/A'}</div>
         </div>
       `;
     });
@@ -368,10 +391,31 @@ function shuffle(arr) {
 
 async function generateR1Pools() {
   try {
-    if (!firebaseReady || !db || !currentTourId) return;
+    console.log('generateR1Pools called. firebaseReady:', firebaseReady, 'db:', !!db, 'currentTourId:', currentTourId);
     
+    if (!firebaseReady) {
+      alert('Firebase not ready. Please refresh page.');
+      return;
+    }
+    if (!db) {
+      alert('Database not initialized. Please refresh page.');
+      return;
+    }
+    if (!currentTourId) {
+      alert('No tournament selected.');
+      return;
+    }
+    
+    console.log('Fetching tournament:', currentTourId);
     const doc = await db.collection('tournaments').doc(currentTourId).get();
     const data = doc.data();
+    
+    console.log('Tournament data:', data);
+    
+    if (!data) {
+      alert('Tournament not found.');
+      return;
+    }
     
     if (data.poolsJson) {
       alert('Pools already generated!');
@@ -379,27 +423,41 @@ async function generateR1Pools() {
     }
     
     const players = data.players;
+    if (!players || players.length < 4) {
+      alert('Need at least 4 players');
+      return;
+    }
+    
+    console.log('Generating pools for', players.length, 'players');
+    
     const pools = [];
     const shuffled = shuffle(players);
     const maxPoolSize = 5;
     const numPools = Math.ceil(players.length / maxPoolSize);
+    
+    console.log('Creating', numPools, 'pools');
     
     for (let i = 0; i < numPools; i++) {
       pools.push([]);
     }
     shuffled.forEach((p, i) => pools[i % numPools].push(p));
     
+    console.log('Pools generated:', pools);
+    
     const poolsJson = JSON.stringify(pools);
+    console.log('Saving pools to Firebase...');
+    
     await db.collection('tournaments').doc(currentTourId).update({
       poolsJson: poolsJson,
       status: 'pools_created'
     });
     
+    console.log('Pools saved successfully');
     alert('✓ Round 1 Pools generated!');
     document.getElementById('genR1Btn').style.display = 'none';
     loadR1Data();
   } catch (e) {
-    console.error('Error:', e);
+    console.error('Error generating R1 pools:', e);
     alert('Error: ' + e.message);
   }
 }
