@@ -245,23 +245,79 @@ async function loadGames() {
           <button class="tab-btn" onclick="switchRound(2)">Round 2</button>
         </div>
       `;
-      document.getElementById('gamesList').innerHTML = roundHtml;
     }
     
     // Use Round 2 pools if that's the current round, otherwise use Round 1
     const activePools = r2pools && window.currentRound === 2 ? r2pools : pools;
     
-    const pool = activePools[0]; // Show first pool
-    const games = [
-      { id: 'g1', t1: [pool[0], pool[1]], t2: [pool[2], pool[3]] },
-      { id: 'g2', t1: [pool[0], pool[2]], t2: [pool[1], pool[3]] },
-      { id: 'g3', t1: [pool[0], pool[3]], t2: [pool[1], pool[2]] }
-    ];
+    console.log('Active pools:', activePools);
+    console.log('Number of pools:', activePools.length);
     
-    if (pool.length === 5) {
-      games.push({ id: 'g4', t1: [pool[0], pool[4]], t2: [pool[1], pool[3]] });
-      games.push({ id: 'g5', t1: [pool[2], pool[4]], t2: [pool[3], pool[1]] });
-    }
+    // Generate games for ALL pools
+    const allGames = [];
+    let gameCounter = 1;
+    
+    activePools.forEach((pool, poolIdx) => {
+      if (pool.length === 4) {
+        allGames.push({ 
+          id: `g${gameCounter++}`, 
+          pool: poolIdx,
+          poolLetter: String.fromCharCode(65 + poolIdx),
+          t1: [pool[0], pool[1]], 
+          t2: [pool[2], pool[3]] 
+        });
+        allGames.push({ 
+          id: `g${gameCounter++}`, 
+          pool: poolIdx,
+          poolLetter: String.fromCharCode(65 + poolIdx),
+          t1: [pool[0], pool[2]], 
+          t2: [pool[1], pool[3]] 
+        });
+        allGames.push({ 
+          id: `g${gameCounter++}`, 
+          pool: poolIdx,
+          poolLetter: String.fromCharCode(65 + poolIdx),
+          t1: [pool[0], pool[3]], 
+          t2: [pool[1], pool[2]] 
+        });
+      } else if (pool.length === 5) {
+        allGames.push({ 
+          id: `g${gameCounter++}`, 
+          pool: poolIdx,
+          poolLetter: String.fromCharCode(65 + poolIdx),
+          t1: [pool[0], pool[1]], 
+          t2: [pool[2], pool[3]] 
+        });
+        allGames.push({ 
+          id: `g${gameCounter++}`, 
+          pool: poolIdx,
+          poolLetter: String.fromCharCode(65 + poolIdx),
+          t1: [pool[0], pool[2]], 
+          t2: [pool[1], pool[4]] 
+        });
+        allGames.push({ 
+          id: `g${gameCounter++}`, 
+          pool: poolIdx,
+          poolLetter: String.fromCharCode(65 + poolIdx),
+          t1: [pool[0], pool[3]], 
+          t2: [pool[2], pool[4]] 
+        });
+        allGames.push({ 
+          id: `g${gameCounter++}`, 
+          pool: poolIdx,
+          poolLetter: String.fromCharCode(65 + poolIdx),
+          t1: [pool[0], pool[4]], 
+          t2: [pool[1], pool[3]] 
+        });
+        allGames.push({ 
+          id: `g${gameCounter++}`, 
+          pool: poolIdx,
+          poolLetter: String.fromCharCode(65 + poolIdx),
+          t1: [pool[1], pool[2]], 
+          t2: [pool[3], pool[4]] 
+        });
+      }
+    });
     
     // Get all submitted scores
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
@@ -271,9 +327,28 @@ async function loadGames() {
     });
     
     console.log('Scores:', scores);
+    console.log('All games:', allGames);
     
-    let html = '';
-    games.forEach(game => {
+    // Build HTML for all pools and games
+    let html = roundHtml;
+    let currentPool = null;
+    
+    allGames.forEach(game => {
+      // Add pool header when pool changes
+      if (game.pool !== currentPool) {
+        if (currentPool !== null) {
+          html += '</div></div>'; // Close previous pool
+        }
+        currentPool = game.pool;
+        html += `
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: 600; font-size: 14px; margin-bottom: 0.5rem; padding: 8px; background: #f0efe9; border-radius: 6px;">
+              Pool ${game.poolLetter}
+            </div>
+            <div>
+        `;
+      }
+      
       const score = scores[game.id];
       const scoreStr = score ? `${score.s1} - ${score.s2}` : '–';
       const scoreColor = score ? '#16a34a' : '#aaa';
@@ -288,6 +363,10 @@ async function loadGames() {
         </div>
       `;
     });
+    
+    if (currentPool !== null) {
+      html += '</div></div>'; // Close last pool
+    }
     
     document.getElementById('gamesList').innerHTML = html;
     
