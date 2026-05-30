@@ -189,23 +189,27 @@ async function loadTournaments() {
     }
 
     console.log('Loading tournaments...');
-    const snap = await db.collection('tournaments').where('status', 'in', ['setup', 'pools_created', 'round2']).get();
+    // Show all tournaments that have pools created
+    const snap = await db.collection('tournaments').get();
     
-    console.log('Found', snap.size, 'tournaments');
+    console.log('Found', snap.size, 'total tournaments');
     
     let html = '';
     snap.forEach(doc => {
       const data = doc.data();
-      console.log('Tournament:', data.name, 'Status:', data.status);
-      html += `
-        <div class="tour-card" onclick="selectTour('${doc.id}')">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <div class="card-title" style="margin-bottom: 0;">${data.name}</div>
-            <div style="font-size: 11px; background: #e8f0fe; color: #1a56db; padding: 3px 8px; border-radius: 6px; font-weight: 600;">● Active</div>
+      // Only show tournaments that have pools
+      if (data.poolsJson) {
+        console.log('Tournament:', data.name, 'Status:', data.status);
+        html += `
+          <div class="tour-card" onclick="selectTour('${doc.id}')">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div class="card-title" style="margin-bottom: 0;">${data.name}</div>
+              <div style="font-size: 11px; background: #e8f0fe; color: #1a56db; padding: 3px 8px; border-radius: 6px; font-weight: 600;">● Active</div>
+            </div>
+            <div style="font-size: 12px; color: #666;">${data.playerCount} players · ${data.date}</div>
           </div>
-          <div style="font-size: 12px; color: #666;">${data.playerCount} players · ${data.date}</div>
-        </div>
-      `;
+        `;
+      }
     });
     
     if (!html) {
