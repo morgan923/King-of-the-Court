@@ -165,7 +165,12 @@ const firebaseConfig = {
 function initFirebase() {
   try {
     console.log('Initializing Firebase...');
-    firebase.initializeApp(firebaseConfig);
+    if (firebase.apps.length === 0) {
+      firebase.initializeApp(firebaseConfig);
+      console.log('Firebase app initialized');
+    } else {
+      console.log('Firebase app already initialized');
+    }
     db = firebase.firestore();
     firebaseReady = true;
     console.log('Firebase initialized successfully');
@@ -186,7 +191,7 @@ function goHome() {
 async function loadTournaments() {
   try {
     if (!firebaseReady || !db) {
-      console.error('Firebase not ready');
+      console.error('Firebase not ready. firebaseReady:', firebaseReady, 'db:', !!db);
       document.getElementById('tourList').innerHTML = '<div class="info">Loading Firebase...</div>';
       return;
     }
@@ -200,9 +205,18 @@ async function loadTournaments() {
     let html = '';
     snap.forEach(doc => {
       const data = doc.data();
+      console.log('Tournament found:', {
+        id: doc.id,
+        name: data.name,
+        status: data.status,
+        hasPoolsJson: !!data.poolsJson,
+        playerCount: data.playerCount,
+        date: data.date
+      });
+      
       // Show tournaments that have pools (poolsJson exists)
       if (data.poolsJson) {
-        console.log('Tournament:', data.name, 'Status:', data.status, 'Has poolsJson:', !!data.poolsJson);
+        console.log('✓ Showing tournament:', data.name);
         html += `
           <div class="tour-card" onclick="selectTour('${doc.id}')">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -213,12 +227,12 @@ async function loadTournaments() {
           </div>
         `;
       } else {
-        console.log('Tournament skipped:', data.name, 'Status:', data.status, 'poolsJson:', data.poolsJson);
+        console.log('✗ Skipped tournament:', data.name, '(no poolsJson)');
       }
     });
     
     if (!html) {
-      html = '<div class="card"><p style="text-align: center; color: #aaa;">No active tournaments. Ask admin to generate pools.</p></div>';
+      html = '<div class="card"><p style="text-align: center; color: #aaa;">No active tournaments yet. Ask admin to:<br/>1. Create tournament<br/>2. Generate Round 1 Pools</p></div>';
     }
     
     document.getElementById('tourList').innerHTML = html;
