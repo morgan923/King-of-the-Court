@@ -266,7 +266,7 @@ async function loadTournamentList() {
         statusColor = '#3b82f6';
       } else if (status === 'complete') {
         statusBadge = '✓ Complete';
-        statusColor = '#16a34a';
+        statusColor = '#dc2626';
       }
       
       html += `
@@ -998,7 +998,7 @@ async function finalizeR2() {
       status: 'complete'
     });
 
-    alert('✓ Tournament Complete!');
+    alert('✓ Tournament Complete!\n\nGo back to the tournament list to see the final status.');
     document.getElementById('finalizeR2Btn').style.display = 'none';
   } catch (e) {
     console.error('Error:', e);
