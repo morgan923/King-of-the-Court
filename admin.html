@@ -219,12 +219,15 @@ async function loadTournamentList() {
       }
       
       html += `
-        <div class="tour-item" onclick="openTournament('${doc.id}')">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <div style="font-weight: 600;">${data.name}</div>
-            <div style="font-size: 11px; background: ${statusColor}20; color: ${statusColor}; padding: 3px 8px; border-radius: 4px; font-weight: 600;">${statusBadge}</div>
+        <div class="tour-item" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <div style="flex: 1; cursor: pointer;" onclick="openTournament('${doc.id}')">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="font-weight: 600;">${data.name}</div>
+              <div style="font-size: 11px; background: ${statusColor}20; color: ${statusColor}; padding: 3px 8px; border-radius: 4px; font-weight: 600;">${statusBadge}</div>
+            </div>
+            <div style="font-size: 11px; color: #666;">${data.playerCount || 0} players · ${data.date || 'N/A'}</div>
           </div>
-          <div style="font-size: 11px; color: #666;">${data.playerCount || 0} players · ${data.date || 'N/A'}</div>
+          <button class="btn" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 10px; font-size: 11px; white-space: nowrap;" onclick="deleteTournament('${doc.id}', '${data.name}')">Delete</button>
         </div>
       `;
     });
@@ -734,6 +737,37 @@ async function finalizeR2() {
 
     alert('✓ Tournament Complete!');
     document.getElementById('finalizeR2Btn').style.display = 'none';
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+async function deleteTournament(tourId, tourName) {
+  const result = confirm(`Delete "${tourName}"? This cannot be undone.`);
+  if (!result) return;
+  
+  try {
+    if (!firebaseReady || !db) {
+      alert('Firebase not ready');
+      return;
+    }
+    
+    // Delete all scores for this tournament
+    const scoresSnap = await db.collection('tournaments').doc(tourId).collection('scores').get();
+    const batch = db.batch();
+    
+    scoresSnap.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // Delete the tournament document
+    batch.delete(db.collection('tournaments').doc(tourId));
+    
+    await batch.commit();
+    
+    alert('✓ Tournament deleted!');
+    loadTournamentList();
   } catch (e) {
     console.error('Error:', e);
     alert('Error: ' + e.message);
