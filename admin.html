@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta charset="UTF-8"/>
@@ -51,6 +52,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 
   <!-- Tournament Selection -->
+
   <div id="tourSelectScreen">
     <div class="card">
       <div class="card-title">Select Tournament or Create New</div>
@@ -60,106 +62,112 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 
   <!-- Tournament Tabs Screen -->
+
   <div id="tourTabsScreen" class="hidden">
     <div style="margin-bottom: 1rem;">
       <button class="btn" onclick="backToTourList()">← Back</button>
     </div>
 
-    <div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
-      <button class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
-      <button class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
-      <button class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
-      <button class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
-      <button class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
-    </div>
+```
+<div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
+  <button class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
+  <button class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
+  <button class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
+  <button class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
+  <button class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
+</div>
 
-    <!-- Live Rankings Tab -->
-    <div id="liveRankingsTab" class="hidden">
-      <div class="card">
-        <div class="card-title">Live Rankings</div>
-        <table class="score-table">
-          <thead>
-            <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
-          </thead>
-          <tbody id="liveRankingsList"></tbody>
-        </table>
-      </div>
-    </div>
+<!-- Live Rankings Tab -->
+<div id="liveRankingsTab" class="hidden">
+  <div class="card">
+    <div class="card-title">Live Rankings</div>
+    <table class="score-table">
+      <thead>
+        <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
+      </thead>
+      <tbody id="liveRankingsList"></tbody>
+    </table>
+  </div>
+</div>
 
-    <!-- Live Scoring Tab -->
-    <div id="liveScoringTab" class="hidden">
-      <div class="card">
-        <div class="card-title">All Scores</div>
-        <table class="score-table">
-          <thead>
-            <tr><th>Round</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
-          </thead>
-          <tbody id="liveScoringList"></tbody>
-        </table>
-      </div>
-    </div>
+<!-- Live Scoring Tab -->
+<div id="liveScoringTab" class="hidden">
+  <div class="card">
+    <div class="card-title">All Scores</div>
+    <table class="score-table">
+      <thead>
+        <tr><th>Round</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
+      </thead>
+      <tbody id="liveScoringList"></tbody>
+    </table>
+  </div>
+</div>
 
-    <!-- Round 1 Tab -->
-      <div class="card">
-        <div class="card-title">Tournament Details</div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Name</label>
-          <input type="text" id="tourName" placeholder="Tournament name"/>
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Date/Time</label>
-          <input type="datetime-local" id="tourDate"/>
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Add Players</label>
-          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-            <input type="text" id="playerInput" placeholder="Player name"/>
-            <button class="btn" onclick="addPlayer()">Add</button>
-          </div>
-          <div class="plist" id="playerList"></div>
-          <div style="font-size: 12px; color: #888;" id="playerCount">0 players</div>
-        </div>
-        <button class="btn primary" onclick="saveTournament()">Save Tournament</button>
-        <div id="setupErr"></div>
-      </div>
+<!-- Round 1 Tab -->
+  <div class="card">
+    <div class="card-title">Tournament Details</div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Name</label>
+      <input type="text" id="tourName" placeholder="Tournament name"/>
     </div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Date/Time</label>
+      <input type="datetime-local" id="tourDate"/>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Add Players</label>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <input type="text" id="playerInput" placeholder="Player name"/>
+        <button class="btn" onclick="addPlayer()">Add</button>
+      </div>
+      <div class="plist" id="playerList"></div>
+      <div style="font-size: 12px; color: #888;" id="playerCount">0 players</div>
+    </div>
+    <button class="btn primary" onclick="saveTournament()">Save Tournament</button>
+    <div id="setupErr"></div>
+  </div>
+</div>
 
-    <!-- Round 1 Tab -->
-    <div id="r1Tab" class="hidden">
-      <div class="card">
-        <div class="card-title">Round 1 - Live Scoring</div>
-        <button class="btn primary" id="genR1Btn" onclick="generateR1Pools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
-        <div id="r1PoolsStatus"></div>
-        <table class="score-table">
-          <thead>
-            <tr><th>Pool</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th></tr>
-          </thead>
-          <tbody id="r1ScoresList"></tbody>
-        </table>
-        <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
-      </div>
-    </div>
+<!-- Round 1 Tab -->
+<div id="r1Tab" class="hidden">
+  <div class="card">
+    <div class="card-title">Round 1 - Live Scoring</div>
+    <button class="btn primary" id="genR1Btn" onclick="generateR1Pools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
+    <div id="r1PoolsStatus"></div>
+    <table class="score-table">
+      <thead>
+        <tr><th>Pool</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th></tr>
+      </thead>
+      <tbody id="r1ScoresList"></tbody>
+    </table>
+    <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
+  </div>
+</div>
 
-    <!-- Round 2 Tab -->
-    <div id="r2Tab" class="hidden">
-      <div class="card">
-        <div class="card-title">Round 2 - Live Scoring</div>
-        <button class="btn primary" id="genR2Btn" onclick="generateR2Pools()" style="margin-bottom: 1rem; display: none;">Generate Round 2 Pools</button>
-        <div id="r2PoolsStatus"></div>
-        <table class="score-table">
-          <thead>
-            <tr><th>Pool</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th></tr>
-          </thead>
-          <tbody id="r2ScoresList"></tbody>
-        </table>
-        <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
-      </div>
-    </div>
+<!-- Round 2 Tab -->
+<div id="r2Tab" class="hidden">
+  <div class="card">
+    <div class="card-title">Round 2 - Live Scoring</div>
+    <button class="btn primary" id="genR2Btn" onclick="generateR2Pools()" style="margin-bottom: 1rem; display: none;">Generate Round 2 Pools</button>
+    <div id="r2PoolsStatus"></div>
+    <table class="score-table">
+      <thead>
+        <tr><th>Pool</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th></tr>
+      </thead>
+      <tbody id="r2ScoresList"></tbody>
+    </table>
+    <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
+  </div>
+</div>
+```
+
   </div>
 </div>
 
 <!-- Firebase Scripts -->
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
@@ -953,5 +961,6 @@ window.addEventListener('load', () => {
   loadTournamentList();
 });
 </script>
+
 </body>
 </html>
