@@ -291,12 +291,18 @@ function showSetup(tourId) {
   document.getElementById('setupErr').innerHTML = '';
   updatePlayerList();
   
-  // Show setup tab
-  showTab('setup');
+  // Hide all tab buttons initially
+  document.getElementById('liveRankingsTabBtn').style.display = 'none';
+  document.getElementById('liveScoringTabBtn').style.display = 'none';
+  document.getElementById('r1TabBtn').style.display = 'none';
+  document.getElementById('r2TabBtn').style.display = 'none';
   
   // Load existing tournament if editing
   if (tourId) {
     loadTournamentData(tourId);
+  } else {
+    // New tournament - show setup tab
+    showTab('setup');
   }
 }
 
@@ -312,21 +318,30 @@ async function loadTournamentData(tourId) {
     currentPlayers = data.players || [];
     updatePlayerList();
     
-    // Show tabs based on progress
+    // Determine which tab to show
     if (data.poolsJson) {
+      // Pools already generated - show live/round tabs
       document.getElementById('liveRankingsTabBtn').style.display = 'block';
       document.getElementById('liveScoringTabBtn').style.display = 'block';
       document.getElementById('r1TabBtn').style.display = 'block';
-      if (!data.r1Finalized) {
+      
+      if (data.r2poolsJson) {
+        document.getElementById('r2TabBtn').style.display = 'block';
+      }
+      
+      // Show R1 or R2 depending on state
+      if (data.r1Finalized && data.r2poolsJson) {
+        showTab('r2');
+      } else {
         showTab('r1');
       }
-    }
-    
-    if (data.r2poolsJson) {
-      document.getElementById('r2TabBtn').style.display = 'block';
+    } else {
+      // No pools yet - show setup tab
+      showTab('setup');
     }
   } catch (e) {
     console.error('Error:', e);
+    showTab('setup');
   }
 }
 
