@@ -67,12 +67,39 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 
     <div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
       <button class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
+      <button class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
+      <button class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
       <button class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
       <button class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
     </div>
 
-    <!-- Setup Tab -->
-    <div id="setupTab">
+    <!-- Live Rankings Tab -->
+    <div id="liveRankingsTab" class="hidden">
+      <div class="card">
+        <div class="card-title">Live Rankings</div>
+        <table class="score-table">
+          <thead>
+            <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
+          </thead>
+          <tbody id="liveRankingsList"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Live Scoring Tab -->
+    <div id="liveScoringTab" class="hidden">
+      <div class="card">
+        <div class="card-title">All Scores</div>
+        <table class="score-table">
+          <thead>
+            <tr><th>Round</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
+          </thead>
+          <tbody id="liveScoringList"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Round 1 Tab -->
       <div class="card">
         <div class="card-title">Tournament Details</div>
         <div style="margin-bottom: 12px;">
@@ -175,17 +202,28 @@ function backToTourList() {
 
 function showTab(tab) {
   document.getElementById('setupTab').classList.toggle('hidden', tab !== 'setup');
+  document.getElementById('liveRankingsTab').classList.toggle('hidden', tab !== 'liveRankings');
+  document.getElementById('liveScoringTab').classList.toggle('hidden', tab !== 'liveScoring');
   document.getElementById('r1Tab').classList.toggle('hidden', tab !== 'r1');
   document.getElementById('r2Tab').classList.toggle('hidden', tab !== 'r2');
   
-  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', 
-      (i === 0 && tab === 'setup') || 
-      (i === 1 && tab === 'r1') || 
-      (i === 2 && tab === 'r2')
-    );
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
   });
   
+  // Find and activate the clicked button
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    if ((tab === 'setup' && btn.textContent === 'Initial Setup') ||
+        (tab === 'liveRankings' && btn.textContent === 'Live Rankings') ||
+        (tab === 'liveScoring' && btn.textContent === 'Live Scoring') ||
+        (tab === 'r1' && btn.textContent === 'Round 1') ||
+        (tab === 'r2' && btn.textContent === 'Round 2')) {
+      btn.classList.add('active');
+    }
+  });
+  
+  if (tab === 'liveRankings') loadLiveRankings();
+  if (tab === 'liveScoring') loadLiveScoring();
   if (tab === 'r1') loadR1Data();
   if (tab === 'r2') loadR2Data();
 }
@@ -276,6 +314,8 @@ async function loadTournamentData(tourId) {
     
     // Show tabs based on progress
     if (data.poolsJson) {
+      document.getElementById('liveRankingsTabBtn').style.display = 'block';
+      document.getElementById('liveScoringTabBtn').style.display = 'block';
       document.getElementById('r1TabBtn').style.display = 'block';
       if (!data.r1Finalized) {
         showTab('r1');
@@ -451,6 +491,11 @@ async function generateR1Pools() {
     console.log('Pools saved successfully');
     alert('✓ Round 1 Pools generated!');
     document.getElementById('genR1Btn').style.display = 'none';
+    
+    // Enable Live tabs
+    document.getElementById('liveRankingsTabBtn').style.display = 'block';
+    document.getElementById('liveScoringTabBtn').style.display = 'block';
+    
     loadR1Data();
   } catch (e) {
     console.error('Error generating R1 pools:', e);
@@ -718,6 +763,119 @@ async function loadR2Data() {
     
     // Auto refresh
     setTimeout(() => loadR2Data(), 5000);
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
+
+async function loadLiveRankings() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const players = data.players || [];
+    
+    // Calculate stats for each player
+    const playerStats = {};
+    players.forEach(p => {
+      playerStats[p] = { wins: 0, losses: 0, pf: 0, pa: 0 };
+    });
+
+    // Get all scores (both R1 and R2)
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    scoresSnap.forEach(doc => {
+      const score = doc.data();
+      if (score.t1 && score.t2) {
+        score.t1.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s1;
+            playerStats[p].pa += score.s2;
+            if (score.s1 > score.s2) playerStats[p].wins++;
+            else if (score.s1 < score.s2) playerStats[p].losses++;
+          }
+        });
+        score.t2.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s2;
+            playerStats[p].pa += score.s1;
+            if (score.s2 > score.s1) playerStats[p].wins++;
+            else if (score.s2 < score.s1) playerStats[p].losses++;
+          }
+        });
+      }
+    });
+
+    // Rank players
+    const ranked = players.map(p => ({
+      name: p,
+      ...playerStats[p],
+      diff: playerStats[p].pf - playerStats[p].pa
+    })).sort((a, b) => {
+      if (a.wins !== b.wins) return b.wins - a.wins;
+      if (a.losses !== b.losses) return a.losses - b.losses;
+      return b.diff - a.diff;
+    });
+
+    let html = '';
+    ranked.forEach((r, i) => {
+      html += `<tr><td>${i + 1}</td><td style="font-weight: 600;">${r.name}</td><td>${r.wins}</td><td>${r.losses}</td><td style="color: ${r.diff > 0 ? '#16a34a' : r.diff < 0 ? '#dc2626' : '#666'};">${r.diff > 0 ? '+' : ''}${r.diff}</td><td>${r.pf}</td><td>${r.pa}</td></tr>`;
+    });
+    
+    document.getElementById('liveRankingsList').innerHTML = html;
+    
+    // Auto refresh
+    setTimeout(() => loadLiveRankings(), 5000);
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
+
+async function loadLiveScoring() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    const scores = [];
+    
+    scoresSnap.forEach(doc => {
+      const data = doc.data();
+      scores.push({
+        id: doc.id,
+        ...data
+      });
+    });
+    
+    // Sort by time, newest first
+    scores.sort((a, b) => {
+      const timeA = a.submittedAt?.toDate?.() || new Date(0);
+      const timeB = b.submittedAt?.toDate?.() || new Date(0);
+      return timeB - timeA;
+    });
+
+    let html = '';
+    scores.forEach(score => {
+      const gameId = score.id;
+      const gameNum = parseInt(gameId.substring(1)); // Extract number from 'g1', 'g1000', etc
+      const isR2 = gameNum >= 1000;
+      const round = isR2 ? 'R2' : 'R1';
+      const time = score.submittedAt?.toDate?.()?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) || '—';
+      
+      html += `<tr>
+        <td>${round}</td>
+        <td>${gameId}</td>
+        <td>${score.t1 ? score.t1.join(' & ') : '—'}</td>
+        <td style="text-align: center; font-weight: 600;"><span style="background: #f0fdf4; color: #16a34a; padding: 2px 6px; border-radius: 3px;">${score.s1}-${score.s2}</span></td>
+        <td>${score.t2 ? score.t2.join(' & ') : '—'}</td>
+        <td style="color: #888; font-size: 11px;">${time}</td>
+      </tr>`;
+    });
+    
+    if (!html) html = '<tr><td colspan="6" style="text-align: center; color: #aaa;">No scores yet</td></tr>';
+    document.getElementById('liveScoringList').innerHTML = html;
+    
+    // Auto refresh
+    setTimeout(() => loadLiveScoring(), 5000);
   } catch (e) {
     console.error('Error:', e);
   }
