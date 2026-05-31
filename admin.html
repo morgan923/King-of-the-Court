@@ -586,14 +586,25 @@ async function loadR1Data() {
       const expectedGames = pool.length === 4 ? 3 : 5;
       let completedCount = 0;
       
-      scoresHtml += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #dc2626;">`;
+      // Temporarily count completed games to determine border color
+      let tempGameCounter = 1 + (idx === 0 ? 0 : pools.slice(0, idx).reduce((sum, p) => sum + (p.length === 4 ? 3 : 5), 0));
+      for (let i = 1; i <= expectedGames; i++) {
+        const gameId = `g${tempGameCounter}`;
+        if (scores[gameId]) completedCount++;
+        tempGameCounter++;
+      }
+      
+      // Blue border if no games complete, red if any games started
+      const borderColor = completedCount === 0 ? '#3b82f6' : '#dc2626';
+      
+      scoresHtml += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid ${borderColor};">`;
       scoresHtml += `<div style="font-weight: 600; margin-bottom: 1rem;">Pool ${poolLetter} - ${pool.join(', ')}</div>`;
       
+      let gameCounterForDisplay = 1 + (idx === 0 ? 0 : pools.slice(0, idx).reduce((sum, p) => sum + (p.length === 4 ? 3 : 5), 0));
       for (let i = 1; i <= expectedGames; i++) {
-        const gameId = `g${gameCounter}`;
+        const gameId = `g${gameCounterForDisplay}`;
         const score = scores[gameId];
         const isComplete = !!score;
-        if (isComplete) completedCount++;
         
         const statusColor = isComplete ? '#16a34a' : '#f59e0b';
         const bgColor = isComplete ? '#f0fdf4' : '#fffbeb';
@@ -609,7 +620,7 @@ async function loadR1Data() {
             <div style="font-size: 11px; color: #888; margin-top: 4px; text-align: right;">${statusText}</div>
           </div>
         `;
-        gameCounter++;
+        gameCounterForDisplay++;
       }
       
       scoresHtml += `<div style="font-size: 11px; color: #666; margin-top: 0.5rem;">${completedCount}/${expectedGames} games complete</div>`;
@@ -618,11 +629,16 @@ async function loadR1Data() {
     
     document.getElementById('r1ScoresList').innerHTML = scoresHtml;
     
-    // Show finalize button if all complete
-    if (allComplete && pools.length > 0) {
+    // Show finalize button if all complete and not already finalized
+    if (!data.r1Finalized && allComplete && pools.length > 0) {
       document.getElementById('finalizeR1Btn').style.display = 'block';
     } else {
       document.getElementById('finalizeR1Btn').style.display = 'none';
+    }
+    
+    // Hide generate button if pools already exist
+    if (poolsJson) {
+      document.getElementById('genR1Btn').style.display = 'none';
     }
     
     // Auto refresh
@@ -772,14 +788,25 @@ async function loadR2Data() {
       const expectedGames = pool.length === 4 ? 3 : 5;
       let completedCount = 0;
       
-      scoresHtml += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #dc2626;">`;
+      // Temporarily count completed games to determine border color
+      let tempGameCounter = 1000 + (idx === 0 ? 0 : r2pools.slice(0, idx).reduce((sum, p) => sum + (p.length === 4 ? 3 : 5), 0));
+      for (let i = 1; i <= expectedGames; i++) {
+        const gameId = `g${tempGameCounter}`;
+        if (scores[gameId]) completedCount++;
+        tempGameCounter++;
+      }
+      
+      // Blue border if no games complete, red if any games started
+      const borderColor = completedCount === 0 ? '#3b82f6' : '#dc2626';
+      
+      scoresHtml += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid ${borderColor};">`;
       scoresHtml += `<div style="font-weight: 600; margin-bottom: 1rem;">Pool ${poolLetter} - ${pool.join(', ')}</div>`;
       
+      let gameCounterForDisplay = 1000 + (idx === 0 ? 0 : r2pools.slice(0, idx).reduce((sum, p) => sum + (p.length === 4 ? 3 : 5), 0));
       for (let i = 1; i <= expectedGames; i++) {
-        const gameId = `g${gameCounter}`;
+        const gameId = `g${gameCounterForDisplay}`;
         const score = scores[gameId];
         const isComplete = !!score;
-        if (isComplete) completedCount++;
         
         const statusColor = isComplete ? '#16a34a' : '#f59e0b';
         const bgColor = isComplete ? '#f0fdf4' : '#fffbeb';
@@ -795,7 +822,7 @@ async function loadR2Data() {
             <div style="font-size: 11px; color: #888; margin-top: 4px; text-align: right;">${statusText}</div>
           </div>
         `;
-        gameCounter++;
+        gameCounterForDisplay++;
       }
       
       scoresHtml += `<div style="font-size: 11px; color: #666; margin-top: 0.5rem;">${completedCount}/${expectedGames} games complete</div>`;
@@ -804,8 +831,8 @@ async function loadR2Data() {
     
     document.getElementById('r2ScoresList').innerHTML = scoresHtml;
     
-    // Show finalize button if all complete
-    if (allComplete && r2pools.length > 0) {
+    // Show finalize button if all complete and not already finalized
+    if (!data.r2Finalized && allComplete && r2pools.length > 0) {
       document.getElementById('finalizeR2Btn').style.display = 'block';
     } else {
       document.getElementById('finalizeR2Btn').style.display = 'none';
