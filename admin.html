@@ -70,11 +70,11 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 
 ```
 <div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
-  <button class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
-  <button class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
-  <button class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
-  <button class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
-  <button class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
+  <button type="button" class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
+  <button type="button" class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
+  <button type="button" class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
+  <button type="button" class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
+  <button type="button" class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
 </div>
 
 <!-- Live Rankings Tab -->
@@ -209,31 +209,51 @@ function backToTourList() {
 }
 
 function showTab(tab) {
-  document.getElementById('setupTab').classList.toggle('hidden', tab !== 'setup');
-  document.getElementById('liveRankingsTab').classList.toggle('hidden', tab !== 'liveRankings');
-  document.getElementById('liveScoringTab').classList.toggle('hidden', tab !== 'liveScoring');
-  document.getElementById('r1Tab').classList.toggle('hidden', tab !== 'r1');
-  document.getElementById('r2Tab').classList.toggle('hidden', tab !== 'r2');
+  console.log('showTab called with:', tab);
   
+  // Hide all tabs
+  const setupTab = document.getElementById('setupTab');
+  const liveRankingsTab = document.getElementById('liveRankingsTab');
+  const liveScoringTab = document.getElementById('liveScoringTab');
+  const r1Tab = document.getElementById('r1Tab');
+  const r2Tab = document.getElementById('r2Tab');
+  
+  if (setupTab) setupTab.classList.add('hidden');
+  if (liveRankingsTab) liveRankingsTab.classList.add('hidden');
+  if (liveScoringTab) liveScoringTab.classList.add('hidden');
+  if (r1Tab) r1Tab.classList.add('hidden');
+  if (r2Tab) r2Tab.classList.add('hidden');
+  
+  // Deactivate all buttons
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.remove('active');
   });
   
-  // Find and activate the clicked button
+  // Show selected tab and activate button
+  if (tab === 'setup') {
+    if (setupTab) setupTab.classList.remove('hidden');
+  } else if (tab === 'liveRankings') {
+    if (liveRankingsTab) liveRankingsTab.classList.remove('hidden');
+    loadLiveRankings();
+  } else if (tab === 'liveScoring') {
+    if (liveScoringTab) liveScoringTab.classList.remove('hidden');
+    loadLiveScoring();
+  } else if (tab === 'r1') {
+    if (r1Tab) r1Tab.classList.remove('hidden');
+    loadR1Data();
+  } else if (tab === 'r2') {
+    if (r2Tab) r2Tab.classList.remove('hidden');
+    loadR2Data();
+  }
+  
+  // Activate the correct button
   document.querySelectorAll('.tab-btn').forEach(btn => {
-    if ((tab === 'setup' && btn.textContent === 'Initial Setup') ||
-        (tab === 'liveRankings' && btn.textContent === 'Live Rankings') ||
-        (tab === 'liveScoring' && btn.textContent === 'Live Scoring') ||
-        (tab === 'r1' && btn.textContent === 'Round 1') ||
-        (tab === 'r2' && btn.textContent === 'Round 2')) {
+    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tab}'`)) {
       btn.classList.add('active');
     }
   });
   
-  if (tab === 'liveRankings') loadLiveRankings();
-  if (tab === 'liveScoring') loadLiveScoring();
-  if (tab === 'r1') loadR1Data();
-  if (tab === 'r2') loadR2Data();
+  console.log('showTab complete. Active tab:', tab);
 }
 
 async function loadTournamentList() {
