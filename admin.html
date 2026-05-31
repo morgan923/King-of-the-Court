@@ -563,13 +563,25 @@ async function loadR1Data() {
       const expectedGames = pool.length === 4 ? 3 : 5;
       let completedGames = 0;
       
-      statusHtml += `<div class="pool-status">Pool ${poolLetter} (${pool.join(', ')})<br/>`;
-      
+      // Count completed games
+      let tempCounter = 1 + (idx === 0 ? 0 : pools.slice(0, idx).reduce((sum, p) => sum + (p.length === 4 ? 3 : 5), 0));
       for (let i = 1; i <= expectedGames; i++) {
-        const gameId = `g${gameCounter}`;
+        const gameId = `g${tempCounter}`;
+        if (scores[gameId]) completedGames++;
+        tempCounter++;
+      }
+      
+      // Blue border if no games complete, red if any games started
+      const borderColor = completedGames === 0 ? '#3b82f6' : '#dc2626';
+      
+      statusHtml += `<div class="pool-status" style="border-left-color: ${borderColor};">Pool ${poolLetter} (${pool.join(', ')})<br/>`;
+      
+      let gameCounterForStatus = 1 + (idx === 0 ? 0 : pools.slice(0, idx).reduce((sum, p) => sum + (p.length === 4 ? 3 : 5), 0));
+      for (let i = 1; i <= expectedGames; i++) {
+        const gameId = `g${gameCounterForStatus}`;
         if (scores[gameId]) completedGames++;
         else allComplete = false;
-        gameCounter++;
+        gameCounterForStatus++;
       }
       
       statusHtml += `${completedGames}/${expectedGames} games complete</div>`;
@@ -765,13 +777,25 @@ async function loadR2Data() {
       const expectedGames = pool.length === 4 ? 3 : 5;
       let completedGames = 0;
       
-      statusHtml += `<div class="pool-status">Pool ${poolLetter} (${pool.join(', ')})<br/>`;
-      
+      // Count completed games
+      let tempCounter = 1000 + (idx === 0 ? 0 : r2pools.slice(0, idx).reduce((sum, p) => sum + (p.length === 4 ? 3 : 5), 0));
       for (let i = 1; i <= expectedGames; i++) {
-        const gameId = `g${gameCounter}`;
+        const gameId = `g${tempCounter}`;
+        if (scores[gameId]) completedGames++;
+        tempCounter++;
+      }
+      
+      // Blue border if no games complete, red if any games started
+      const borderColor = completedGames === 0 ? '#3b82f6' : '#dc2626';
+      
+      statusHtml += `<div class="pool-status" style="border-left-color: ${borderColor};">Pool ${poolLetter} (${pool.join(', ')})<br/>`;
+      
+      let gameCounterForStatus = 1000 + (idx === 0 ? 0 : r2pools.slice(0, idx).reduce((sum, p) => sum + (p.length === 4 ? 3 : 5), 0));
+      for (let i = 1; i <= expectedGames; i++) {
+        const gameId = `g${gameCounterForStatus}`;
         if (scores[gameId]) completedGames++;
         else allComplete = false;
-        gameCounter++;
+        gameCounterForStatus++;
       }
       
       statusHtml += `${completedGames}/${expectedGames} games complete</div>`;
