@@ -13,6 +13,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .header { text-align: center; margin-bottom: 2rem; border-bottom: 3px solid #dc2626; padding-bottom: 1rem; }
 .header h1 { font-size: 32px; font-weight: 700; color: #dc2626; margin-bottom: 4px; }
 .card { background: #fff; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid #e5e4e0; }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; }
+.overlay.active { display: block; }
+.modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border-radius: 12px; padding: 2rem; z-index: 101; max-width: 400px; width: 90%; display: none; }
+.modal.active { display: block; }
 .card-title { font-size: 15px; font-weight: 600; margin-bottom: 1rem; }
 .btn { padding: 10px 16px; font-size: 13px; cursor: pointer; border: 1px solid #d5d4d0; border-radius: 8px; background: #fff; font-weight: 500; }
 .btn:hover { background: #f5f4f0; }
@@ -137,6 +141,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   <div class="card">
     <div class="card-title">Round 1 - Live Scoring</div>
     <button class="btn primary" id="genR1Btn" onclick="generateR1Pools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
+    <button class="btn" id="editPoolsBtn" onclick="editPoolSpecs()" style="margin-bottom: 1rem; margin-left: 0.5rem; display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit Pool Specs</button>
     <div id="r1PoolsStatus"></div>
     <div id="r1ScoresList"></div>
     <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
@@ -155,6 +160,16 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 ```
 
   </div>
+</div>
+
+<!-- Pool Specifications Modal -->
+
+<div class="overlay" id="poolSpecOverlay"></div>
+<div class="modal" id="poolSpecModal" style="max-width: 500px;">
+  <button onclick="closePoolSpecModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+  <div style="font-weight: 600; margin-bottom: 1rem; font-size: 14px;">Edit Pool Specifications</div>
+  <div id="poolSpecContent"></div>
+  <button class="btn primary" style="width: 100%; margin-top: 1rem;" onclick="savePoolSpecs()">Update Pools</button>
 </div>
 
 <!-- Firebase Scripts -->
@@ -199,6 +214,22 @@ function backToTourList() {
   document.getElementById('tourSelectScreen').classList.remove('hidden');
   document.getElementById('tourTabsScreen').classList.add('hidden');
   currentTourId = null;
+  selectedTourType = null;
+  currentPlayers = [];
+  document.getElementById('tourName').value = '';
+  document.getElementById('tourDate').value = '';
+  document.getElementById('playerInput').value = '';
+  document.getElementById('playerList').innerHTML = '';
+  document.getElementById('playerCount').textContent = '0 players';
+  document.getElementById('setupErr').innerHTML = '';
+  document.getElementById('tourTypeError').style.display = 'none';
+  // Reset buttons
+  document.getElementById('kotcBtn').style.background = '#fff';
+  document.getElementById('kotcBtn').style.color = '#1a1a1a';
+  document.getElementById('kotcBtn').style.borderColor = '#d5d4d0';
+  document.getElementById('regularBtn').style.background = '#fff';
+  document.getElementById('regularBtn').style.color = '#1a1a1a';
+  document.getElementById('regularBtn').style.borderColor = '#d5d4d0';
   loadTournamentList();
 }
 
@@ -338,6 +369,13 @@ async function loadTournamentData(tourId) {
     document.getElementById('tourName').value = data.name;
     document.getElementById('tourDate').value = data.dateTime;
     currentPlayers = data.players || [];
+    selectedTourType = data.tournamentType || null;
+    
+    // Update tournament type button styling
+    if (selectedTourType) {
+      selectTourType(selectedTourType);
+    }
+    
     updatePlayerList();
     
     // Determine which tab to show
@@ -394,6 +432,20 @@ function removePlayer(i) {
   updatePlayerList();
 }
 
+function selectTourType(type) {
+  selectedTourType = type;
+  document.getElementById('tourTypeError').style.display = 'none';
+  
+  // Update button styles - green for selected
+  document.getElementById('kotcBtn').style.background = type === 'kotc' ? '#16a34a' : '#fff';
+  document.getElementById('kotcBtn').style.color = type === 'kotc' ? '#fff' : '#1a1a1a';
+  document.getElementById('kotcBtn').style.borderColor = type === 'kotc' ? '#16a34a' : '#d5d4d0';
+  
+  document.getElementById('regularBtn').style.background = type === 'regular' ? '#16a34a' : '#fff';
+  document.getElementById('regularBtn').style.color = type === 'regular' ? '#fff' : '#1a1a1a';
+  document.getElementById('regularBtn').style.borderColor = type === 'regular' ? '#16a34a' : '#d5d4d0';
+}
+
 async function saveTournament() {
   const name = document.getElementById('tourName').value.trim();
   const dateInput = document.getElementById('tourDate').value;
@@ -401,6 +453,10 @@ async function saveTournament() {
   
   errEl.innerHTML = '';
   
+  if (!selectedTourType) {
+    document.getElementById('tourTypeError').style.display = 'block';
+    return;
+  }
   if (!name || !dateInput) {
     errEl.innerHTML = '<div class="error">Fill in all fields</div>';
     return;
@@ -432,6 +488,7 @@ async function saveTournament() {
       name: name,
       date: date,
       dateTime: dateInput,
+      tournamentType: selectedTourType,
       players: currentPlayers,
       playerCount: currentPlayers.length,
       createdAt: new Date(),
@@ -528,6 +585,13 @@ async function generateR1Pools() {
     console.log('Pools saved successfully');
     alert('✓ Round 1 Pools generated!');
     document.getElementById('genR1Btn').style.display = 'none';
+    
+    // Check if pools are all the same size
+    const poolSizes = pools.map(p => p.length);
+    const allEqual = poolSizes.every(size => size === poolSizes[0]);
+    if (!allEqual) {
+      document.getElementById('editPoolsBtn').style.display = 'inline-block';
+    }
     
     // Enable Live tabs
     document.getElementById('liveRankingsTabBtn').style.display = 'block';
