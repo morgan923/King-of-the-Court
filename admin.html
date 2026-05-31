@@ -93,13 +93,8 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 <!-- Live Scoring Tab -->
 <div id="liveScoringTab" class="hidden">
   <div class="card">
-    <div class="card-title">All Scores</div>
-    <table class="score-table">
-      <thead>
-        <tr><th>Round</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th><th>Time</th></tr>
-      </thead>
-      <tbody id="liveScoringList"></tbody>
-    </table>
+    <div class="card-title">All Scores by Pool & Round</div>
+    <div id="liveScoringList"></div>
   </div>
 </div>
 
@@ -134,12 +129,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
     <div class="card-title">Round 1 - Live Scoring</div>
     <button class="btn primary" id="genR1Btn" onclick="generateR1Pools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
     <div id="r1PoolsStatus"></div>
-    <table class="score-table">
-      <thead>
-        <tr><th>Pool</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th></tr>
-      </thead>
-      <tbody id="r1ScoresList"></tbody>
-    </table>
+    <div id="r1ScoresList"></div>
     <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
   </div>
 </div>
@@ -148,14 +138,8 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 <div id="r2Tab" class="hidden">
   <div class="card">
     <div class="card-title">Round 2 - Live Scoring</div>
-    <button class="btn primary" id="genR2Btn" onclick="generateR2Pools()" style="margin-bottom: 1rem; display: none;">Generate Round 2 Pools</button>
     <div id="r2PoolsStatus"></div>
-    <table class="score-table">
-      <thead>
-        <tr><th>Pool</th><th>Game</th><th>Team 1</th><th>Score</th><th>Team 2</th></tr>
-      </thead>
-      <tbody id="r2ScoresList"></tbody>
-    </table>
+    <div id="r2ScoresList"></div>
     <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
   </div>
 </div>
@@ -592,33 +576,43 @@ async function loadR1Data() {
     
     document.getElementById('r1PoolsStatus').innerHTML = statusHtml;
     
-    // Show scores
+    // Show scores organized by pool
     let scoresHtml = '';
-    let currentGameId = 'g1';
-    let gameNum = 1;
     gameCounter = 1;
     
     pools.forEach((pool, idx) => {
       const poolLetter = String.fromCharCode(65 + idx);
       const expectedGames = pool.length === 4 ? 3 : 5;
+      let completedCount = 0;
+      
+      scoresHtml += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #dc2626;">`;
+      scoresHtml += `<div style="font-weight: 600; margin-bottom: 1rem;">Pool ${poolLetter} - ${pool.join(', ')}</div>`;
       
       for (let i = 1; i <= expectedGames; i++) {
         const gameId = `g${gameCounter}`;
         const score = scores[gameId];
-        const status = score ? 'complete' : 'pending';
-        const statusText = score ? '✓ Complete' : '○ Pending';
+        const isComplete = !!score;
+        if (isComplete) completedCount++;
+        
+        const statusColor = isComplete ? '#16a34a' : '#f59e0b';
+        const bgColor = isComplete ? '#f0fdf4' : '#fffbeb';
+        const statusText = isComplete ? '✓ Complete' : '○ Pending';
         
         scoresHtml += `
-          <tr>
-            <td>${poolLetter}</td>
-            <td>Game ${i}</td>
-            <td>${score ? (score.t1 ? score.t1.join(' & ') : '—') : '—'}</td>
-            <td style="text-align: center;"><span class="game-status ${status}">${statusText}</span></td>
-            <td>${score ? (score.t2 ? score.t2.join(' & ') : '—') : '—'}</td>
-          </tr>
+          <div style="margin-bottom: 0.5rem; padding: 8px; background: ${bgColor}; border-radius: 6px; border-left: 3px solid ${statusColor};">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+              <div style="flex: 1;">${score ? (score.t1 ? score.t1.join(' & ') : '—') : '—'}</div>
+              <div style="font-weight: 600; color: ${statusColor}; min-width: 50px; text-align: center;">${score ? `${score.s1}-${score.s2}` : '—'}</div>
+              <div style="flex: 1; text-align: right;">${score ? (score.t2 ? score.t2.join(' & ') : '—') : '—'}</div>
+            </div>
+            <div style="font-size: 11px; color: #888; margin-top: 4px; text-align: right;">${statusText}</div>
+          </div>
         `;
         gameCounter++;
       }
+      
+      scoresHtml += `<div style="font-size: 11px; color: #666; margin-top: 0.5rem;">${completedCount}/${expectedGames} games complete</div>`;
+      scoresHtml += `</div>`;
     });
     
     document.getElementById('r1ScoresList').innerHTML = scoresHtml;
@@ -768,31 +762,43 @@ async function loadR2Data() {
     
     document.getElementById('r2PoolsStatus').innerHTML = statusHtml;
     
-    // Show scores
+    // Show scores organized by pool
     let scoresHtml = '';
     gameCounter = 1000; // Offset R2 games to avoid conflict with R1
     
     r2pools.forEach((pool, idx) => {
       const poolLetter = String.fromCharCode(65 + idx);
       const expectedGames = pool.length === 4 ? 3 : 5;
+      let completedCount = 0;
+      
+      scoresHtml += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #3b82f6;">`;
+      scoresHtml += `<div style="font-weight: 600; margin-bottom: 1rem;">Pool ${poolLetter} - ${pool.join(', ')}</div>`;
       
       for (let i = 1; i <= expectedGames; i++) {
         const gameId = `g${gameCounter}`;
         const score = scores[gameId];
-        const status = score ? 'complete' : 'pending';
-        const statusText = score ? '✓ Complete' : '○ Pending';
+        const isComplete = !!score;
+        if (isComplete) completedCount++;
+        
+        const statusColor = isComplete ? '#16a34a' : '#f59e0b';
+        const bgColor = isComplete ? '#f0fdf4' : '#fffbeb';
+        const statusText = isComplete ? '✓ Complete' : '○ Pending';
         
         scoresHtml += `
-          <tr>
-            <td>${poolLetter}</td>
-            <td>Game ${i}</td>
-            <td>${score ? (score.t1 ? score.t1.join(' & ') : '—') : '—'}</td>
-            <td style="text-align: center;"><span class="game-status ${status}">${statusText}</span></td>
-            <td>${score ? (score.t2 ? score.t2.join(' & ') : '—') : '—'}</td>
-          </tr>
+          <div style="margin-bottom: 0.5rem; padding: 8px; background: ${bgColor}; border-radius: 6px; border-left: 3px solid ${statusColor};">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+              <div style="flex: 1;">${score ? (score.t1 ? score.t1.join(' & ') : '—') : '—'}</div>
+              <div style="font-weight: 600; color: ${statusColor}; min-width: 50px; text-align: center;">${score ? `${score.s1}-${score.s2}` : '—'}</div>
+              <div style="flex: 1; text-align: right;">${score ? (score.t2 ? score.t2.join(' & ') : '—') : '—'}</div>
+            </div>
+            <div style="font-size: 11px; color: #888; margin-top: 4px; text-align: right;">${statusText}</div>
+          </div>
         `;
         gameCounter++;
       }
+      
+      scoresHtml += `<div style="font-size: 11px; color: #666; margin-top: 0.5rem;">${completedCount}/${expectedGames} games complete</div>`;
+      scoresHtml += `</div>`;
     });
     
     document.getElementById('r2ScoresList').innerHTML = scoresHtml;
@@ -819,7 +825,7 @@ async function loadLiveRankings() {
     const data = doc.data();
     const players = data.players || [];
     
-    // Calculate stats for each player
+    // Calculate stats for each player - ONLY from complete games
     const playerStats = {};
     players.forEach(p => {
       playerStats[p] = { wins: 0, losses: 0, pf: 0, pa: 0 };
@@ -829,7 +835,12 @@ async function loadLiveRankings() {
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
     scoresSnap.forEach(doc => {
       const score = doc.data();
-      if (score.t1 && score.t2) {
+      
+      // Only count as complete if both teams have valid scores
+      const isComplete = score.t1 && score.t2 && score.s1 !== undefined && score.s2 !== undefined && 
+                        (score.s1 > 0 || score.s2 > 0);
+      
+      if (isComplete) {
         score.t1.forEach(p => {
           if (playerStats[p]) {
             playerStats[p].pf += score.s1;
@@ -878,43 +889,93 @@ async function loadLiveScoring() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
     
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const pools1 = data.poolsJson ? JSON.parse(data.poolsJson) : [];
+    const pools2 = data.r2poolsJson ? JSON.parse(data.r2poolsJson) : [];
+    
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
-    const scores = [];
+    const scores = {};
     
     scoresSnap.forEach(doc => {
-      const data = doc.data();
-      scores.push({
-        id: doc.id,
-        ...data
-      });
+      scores[doc.id] = doc.data();
     });
     
-    // Sort by time, newest first
-    scores.sort((a, b) => {
-      const timeA = a.submittedAt?.toDate?.() || new Date(0);
-      const timeB = b.submittedAt?.toDate?.() || new Date(0);
-      return timeB - timeA;
-    });
-
     let html = '';
-    scores.forEach(score => {
-      const gameId = score.id;
-      const gameNum = parseInt(gameId.substring(1)); // Extract number from 'g1', 'g1000', etc
-      const isR2 = gameNum >= 1000;
-      const round = isR2 ? 'R2' : 'R1';
-      const time = score.submittedAt?.toDate?.()?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) || '—';
-      
-      html += `<tr>
-        <td>${round}</td>
-        <td>${gameId}</td>
-        <td>${score.t1 ? score.t1.join(' & ') : '—'}</td>
-        <td style="text-align: center; font-weight: 600;"><span style="background: #f0fdf4; color: #16a34a; padding: 2px 6px; border-radius: 3px;">${score.s1}-${score.s2}</span></td>
-        <td>${score.t2 ? score.t2.join(' & ') : '—'}</td>
-        <td style="color: #888; font-size: 11px;">${time}</td>
-      </tr>`;
-    });
     
-    if (!html) html = '<tr><td colspan="6" style="text-align: center; color: #aaa;">No scores yet</td></tr>';
+    // Round 1 scores
+    if (pools1.length > 0) {
+      html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 15px; margin-bottom: 1rem; padding: 12px; background: #fee2e2; border-left: 4px solid #dc2626;">Round 1 Scores</div>';
+      
+      let gameCounter = 1;
+      pools1.forEach((pool, idx) => {
+        const poolLetter = String.fromCharCode(65 + idx);
+        const expectedGames = pool.length === 4 ? 3 : 5;
+        
+        html += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px;">`;
+        html += `<div style="font-weight: 600; margin-bottom: 1rem;">Pool ${poolLetter}</div>`;
+        
+        for (let i = 1; i <= expectedGames; i++) {
+          const gameId = `g${gameCounter}`;
+          const score = scores[gameId];
+          const time = score?.submittedAt?.toDate?.()?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) || '—';
+          
+          html += `
+            <div style="margin-bottom: 0.5rem; padding: 8px; background: ${score ? '#f0fdf4' : '#fffbeb'}; border-radius: 6px; border-left: 3px solid ${score ? '#16a34a' : '#f59e0b'};">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                <div style="flex: 1;">${score ? (score.t1 ? score.t1.join(' & ') : '—') : '—'}</div>
+                <div style="font-weight: 600; color: ${score ? '#16a34a' : '#aaa'}; min-width: 50px; text-align: center;">${score ? `${score.s1}-${score.s2}` : '—'}</div>
+                <div style="flex: 1; text-align: right;">${score ? (score.t2 ? score.t2.join(' & ') : '—') : '—'}</div>
+              </div>
+              <div style="font-size: 11px; color: #888; margin-top: 4px; text-align: right;">${time}</div>
+            </div>
+          `;
+          gameCounter++;
+        }
+        
+        html += `</div>`;
+      });
+      
+      html += '</div>';
+    }
+    
+    // Round 2 scores
+    if (pools2.length > 0) {
+      html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 15px; margin-bottom: 1rem; padding: 12px; background: #f0fdf4; border-left: 4px solid #16a34a;">Round 2 Scores</div>';
+      
+      let gameCounter = 1000;
+      pools2.forEach((pool, idx) => {
+        const poolLetter = String.fromCharCode(65 + idx);
+        const expectedGames = pool.length === 4 ? 3 : 5;
+        
+        html += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: #faf9f7; border-radius: 8px;">`;
+        html += `<div style="font-weight: 600; margin-bottom: 1rem;">Pool ${poolLetter}</div>`;
+        
+        for (let i = 1; i <= expectedGames; i++) {
+          const gameId = `g${gameCounter}`;
+          const score = scores[gameId];
+          const time = score?.submittedAt?.toDate?.()?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) || '—';
+          
+          html += `
+            <div style="margin-bottom: 0.5rem; padding: 8px; background: ${score ? '#f0fdf4' : '#fffbeb'}; border-radius: 6px; border-left: 3px solid ${score ? '#16a34a' : '#f59e0b'};">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
+                <div style="flex: 1;">${score ? (score.t1 ? score.t1.join(' & ') : '—') : '—'}</div>
+                <div style="font-weight: 600; color: ${score ? '#16a34a' : '#aaa'}; min-width: 50px; text-align: center;">${score ? `${score.s1}-${score.s2}` : '—'}</div>
+                <div style="flex: 1; text-align: right;">${score ? (score.t2 ? score.t2.join(' & ') : '—') : '—'}</div>
+              </div>
+              <div style="font-size: 11px; color: #888; margin-top: 4px; text-align: right;">${time}</div>
+            </div>
+          `;
+          gameCounter++;
+        }
+        
+        html += `</div>`;
+      });
+      
+      html += '</div>';
+    }
+    
+    if (!html) html = '<p style="text-align: center; color: #aaa;">No scores yet</p>';
     document.getElementById('liveScoringList').innerHTML = html;
     
     // Auto refresh
