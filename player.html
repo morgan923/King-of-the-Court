@@ -173,6 +173,11 @@ function initFirebase() {
 }
 
 function goHome() {
+  // Clean up listener when leaving tournament
+  if (scoreListener) {
+    scoreListener();
+    scoreListener = null;
+  }
   document.getElementById('homeScreen').classList.remove('hidden');
   document.getElementById('tourScreen').classList.add('hidden');
   loadTournaments();
@@ -266,6 +271,9 @@ async function selectTour(tourId) {
     if (data.r2poolsJson) {
       await loadGamesByRound('r2');
     }
+    
+    // Set up real-time listener (only once per tournament)
+    listenToScores();
   } catch (e) {
     console.error('Error:', e);
     alert('Error: ' + e.message);
@@ -494,26 +502,28 @@ async function loadGamesByRound(round) {
     }
     
     document.getElementById(round === 'r1' ? 'r1GamesList' : 'r2GamesList').innerHTML = html;
-    
-    // Listen for real-time score updates
-    listenToScores();
   } catch (e) {
     console.error('Error:', e);
     document.getElementById(round === 'r1' ? 'r1GamesList' : 'r2GamesList').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
 }
 
+let scoreListener = null; // Global listener reference
+
 function listenToScores() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
+    if (scoreListener) scoreListener(); // Remove old listener
     
-    console.log('Starting to listen for score updates...');
-    db.collection('tournaments').doc(currentTourId).collection('scores').onSnapshot((snap) => {
-      console.log('Score update received');
+    console.log('Starting single listener for score updates...');
+    
+    // Single listener that updates all visible tabs
+    scoreListener = db.collection('tournaments').doc(currentTourId).collection('scores').onSnapshot(() => {
+      console.log('Score update received - refreshing visible tabs');
       loadRankings();
       loadGamesByRound('r1');
       loadGamesByRound('r2');
-    });
+    }, { includeMetadataChanges: false });
   } catch (e) {
     console.error('Error listening to scores:', e);
   }
@@ -670,10 +680,7 @@ async function submitScore() {
     console.log('Score submitted successfully');
     alert('✓ Score saved!');
     closeModal();
-    // Reload current tabs
-    loadRankings();
-    loadGamesByRound('r1');
-    loadGamesByRound('r2');
+    // Real-time listener will automatically update all tabs
   } catch (e) {
     console.error('Error submitting score:', e);
     alert('Error submitting score: ' + e.message);
