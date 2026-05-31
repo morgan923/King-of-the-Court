@@ -103,6 +103,14 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   <div class="card">
     <div class="card-title">Tournament Details</div>
     <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Tournament Type</label>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn" id="kotcBtn" onclick="selectTourType('kotc')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">King of the Beach</button>
+        <button type="button" class="btn" id="regularBtn" onclick="selectTourType('regular')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">Regular Tournament</button>
+      </div>
+      <div id="tourTypeError" style="color: #dc2626; font-size: 11px; margin-top: 4px; display: none;">Please select a tournament type</div>
+    </div>
+    <div style="margin-bottom: 12px;">
       <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Name</label>
       <input type="text" id="tourName" placeholder="Tournament name"/>
     </div>
@@ -160,6 +168,7 @@ let firebaseReady = false;
 let db = null;
 let currentTourId = null;
 let currentPlayers = [];
+let selectedTourType = null;
 
 const firebaseConfig = {
   apiKey: "AIzaSyBQAx2DK8mm7lyGTqaqhWYfTTTBc3DznUg",
