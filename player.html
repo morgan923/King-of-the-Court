@@ -121,6 +121,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     SWITCH SIDES! Tap to rotate →
   </div>
 
+  <!-- Scoring rules display -->
+
+  <div id="scoringRulesDisplay" style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 12px; margin-bottom: 1rem; font-size: 12px; text-align: center;">
+    <div style="color: #16a34a; font-weight: 600;" id="rulesText"></div>
+  </div>
+
   <div class="score-display">
     <div class="score-team" id="team1">
       <div id="team1Name" style="font-size: 12px; font-weight: 600; margin-bottom: 8px;"></div>
@@ -156,6 +162,9 @@ let currentTourId = null;
 let currentGameId = null;
 let currentScore = { s1: 0, s2: 0 };
 let currentGame = null;
+let poolScoringRules = {};
+let currentPools = null;
+let currentPlayerPool = null;
 
 // Track which round we're viewing
 window.currentRound = 1;
@@ -272,6 +281,10 @@ async function selectTour(tourId) {
     
     document.getElementById('tourName').textContent = data.name;
     document.getElementById('poolInfo').textContent = `${data.playerCount} players · ${data.date}`;
+    
+    // Load scoring rules and pools
+    poolScoringRules = data.poolScoringRules || {};
+    currentPools = data.poolsJson ? JSON.parse(data.poolsJson) : null;
     
     // Show R2 tab if Round 2 exists
     if (data.r2poolsJson) {
@@ -422,6 +435,7 @@ async function loadGamesByRound(round) {
         allGames.push({ 
           id: `g${gameCounter++}`, 
           pool: poolIdx,
+          poolSize: 4,
           poolLetter: String.fromCharCode(65 + poolIdx),
           t1: [pool[0], pool[1]], 
           t2: [pool[2], pool[3]] 
@@ -429,6 +443,7 @@ async function loadGamesByRound(round) {
         allGames.push({ 
           id: `g${gameCounter++}`, 
           pool: poolIdx,
+          poolSize: 4,
           poolLetter: String.fromCharCode(65 + poolIdx),
           t1: [pool[0], pool[2]], 
           t2: [pool[1], pool[3]] 
@@ -436,6 +451,7 @@ async function loadGamesByRound(round) {
         allGames.push({ 
           id: `g${gameCounter++}`, 
           pool: poolIdx,
+          poolSize: 4,
           poolLetter: String.fromCharCode(65 + poolIdx),
           t1: [pool[0], pool[3]], 
           t2: [pool[1], pool[2]] 
@@ -444,6 +460,7 @@ async function loadGamesByRound(round) {
         allGames.push({ 
           id: `g${gameCounter++}`, 
           pool: poolIdx,
+          poolSize: 5,
           poolLetter: String.fromCharCode(65 + poolIdx),
           t1: [pool[0], pool[1]], 
           t2: [pool[2], pool[3]] 
@@ -451,6 +468,7 @@ async function loadGamesByRound(round) {
         allGames.push({ 
           id: `g${gameCounter++}`, 
           pool: poolIdx,
+          poolSize: 5,
           poolLetter: String.fromCharCode(65 + poolIdx),
           t1: [pool[0], pool[2]], 
           t2: [pool[1], pool[4]] 
@@ -458,6 +476,7 @@ async function loadGamesByRound(round) {
         allGames.push({ 
           id: `g${gameCounter++}`, 
           pool: poolIdx,
+          poolSize: 5,
           poolLetter: String.fromCharCode(65 + poolIdx),
           t1: [pool[0], pool[3]], 
           t2: [pool[2], pool[4]] 
@@ -505,7 +524,7 @@ async function loadGamesByRound(round) {
       const scoreColor = score ? '#16a34a' : '#aaa';
       
       html += `
-        <div class="game-card" onclick="openScoring('${game.id}', '${game.t1.join(' & ')}', '${game.t2.join(' & ')}', ${score ? score.s1 : 0}, ${score ? score.s2 : 0})" style="${score ? 'background: #f0fdf4; border-color: #16a34a;' : ''}">
+        <div class="game-card" onclick="openScoring('${game.id}', '${game.t1.join(' & ')}', '${game.t2.join(' & ')}', ${score ? score.s1 : 0}, ${score ? score.s2 : 0}, ${game.poolSize})" style="${score ? 'background: #f0fdf4; border-color: #16a34a;' : ''}">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="flex: 1; font-size: 13px; font-weight: 500;">${game.t1.join(' & ')}</div>
             <div style="font-weight: 600; color: ${scoreColor}; min-width: 40px; text-align: center;">${scoreStr}</div>
@@ -548,9 +567,9 @@ function listenToScores() {
 }
 
 
-function openScoring(gameId, team1, team2, s1 = 0, s2 = 0) {
+function openScoring(gameId, team1, team2, s1 = 0, s2 = 0, poolSize = null) {
   currentGameId = gameId;
-  currentGame = { team1, team2 };
+  currentGame = { team1, team2, poolSize };
   currentScore = { s1: s1, s2: s2 };
   
   document.getElementById('gameTitle').textContent = `${team1} vs ${team2}`;
@@ -610,11 +629,21 @@ function isValidScore() {
   const winner = Math.max(s1, s2);
   const loser = Math.min(s1, s2);
   
-  // Winner must be at least 15 (or 21 for 4-player)
-  if (winner < 15) return false;
+  // Get scoring rules for this pool size
+  const poolSize = currentGame?.poolSize;
+  let targetScore = 15;
+  let maxScore = 21;
   
-  // Must win by 2 OR reach the cap
-  if (winner === 21 || winner === 28) return true; // At cap
+  if (poolSize && poolScoringRules[poolSize]) {
+    targetScore = poolScoringRules[poolSize].targetScore;
+    maxScore = poolScoringRules[poolSize].maxScore;
+  }
+  
+  // Winner must be at least targetScore
+  if (winner < targetScore) return false;
+  
+  // Must win by 2 OR reach the max score
+  if (winner === maxScore) return true; // At cap
   if (winner - loser >= 2) return true; // Win by 2
   
   return false;
