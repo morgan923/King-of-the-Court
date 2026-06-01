@@ -172,6 +172,16 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   <button class="btn primary" style="width: 100%; margin-top: 1rem;" onclick="savePoolSpecs()">Update Pools</button>
 </div>
 
+<!-- Pool Scoring Rules Modal -->
+
+<div class="overlay" id="scoringRulesOverlay"></div>
+<div class="modal" id="scoringRulesModal" style="max-width: 600px;">
+  <button onclick="closeScoringRulesModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+  <div style="font-weight: 600; margin-bottom: 1rem; font-size: 14px;">Set Scoring Rules by Pool Size</div>
+  <div id="scoringRulesContent" style="max-height: 400px; overflow-y: auto;"></div>
+  <button class="btn primary" style="width: 100%; margin-top: 1rem;" onclick="saveScoringRules()">Save Scoring Rules</button>
+</div>
+
 <!-- Firebase Scripts -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -184,6 +194,8 @@ let db = null;
 let currentTourId = null;
 let currentPlayers = [];
 let selectedTourType = null;
+let currentPools = null;
+let poolScoringRules = {};
 
 const firebaseConfig = {
   apiKey: "AIzaSyBQAx2DK8mm7lyGTqaqhWYfTTTBc3DznUg",
@@ -604,6 +616,72 @@ async function generateR1Pools() {
   }
 }
 
+function editPoolSpecs() {
+  const poolsJson = currentPools;
+  if (!poolsJson) {
+    alert('No pools generated yet');
+    return;
+  }
+  
+  const pools = JSON.parse(poolsJson);
+  let html = '<div style="max-height: 400px; overflow-y: auto;">';
+  
+  pools.forEach((pool, idx) => {
+    const poolLetter = String.fromCharCode(65 + idx);
+    html += `<div style="margin-bottom: 1rem; padding: 1rem; background: #faf9f7; border-radius: 8px;">`;
+    html += `<div style="font-weight: 600; margin-bottom: 0.5rem;">Pool ${poolLetter} (${pool.length} players)</div>`;
+    html += `<div style="display: flex; flex-wrap: wrap; gap: 8px;">`;
+    
+    pool.forEach((player, playerIdx) => {
+      html += `
+        <div style="background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #e5e4e0; display: flex; align-items: center; gap: 8px;">
+          <span>${player}</span>
+          <button type="button" onclick="removePlayerFromPool(${idx}, ${playerIdx})" style="background: none; border: none; color: #dc2626; cursor: pointer; font-size: 16px;">✕</button>
+        </div>
+      `;
+    });
+    
+    html += `</div></div>`;
+  });
+  
+  html += '</div>';
+  document.getElementById('poolSpecContent').innerHTML = html;
+  document.getElementById('poolSpecOverlay').classList.add('active');
+  document.getElementById('poolSpecModal').classList.add('active');
+}
+
+function closePoolSpecModal() {
+  document.getElementById('poolSpecOverlay').classList.remove('active');
+  document.getElementById('poolSpecModal').classList.remove('active');
+}
+
+function removePlayerFromPool(poolIdx, playerIdx) {
+  if (!currentPools) return;
+  const pools = JSON.parse(currentPools);
+  pools[poolIdx].splice(playerIdx, 1);
+  currentPools = JSON.stringify(pools);
+  editPoolSpecs(); // Refresh the modal
+}
+
+async function savePoolSpecs() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    await db.collection('tournaments').doc(currentTourId).update({
+      poolsJson: currentPools
+    });
+    
+    alert('✓ Pools updated!');
+    closePoolSpecModal();
+    
+    // Show scoring rules modal
+    showScoringRulesModal();
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
 async function loadR1Data() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
@@ -620,6 +698,7 @@ async function loadR1Data() {
     }
     
     const pools = JSON.parse(poolsJson);
+    currentPools = poolsJson;
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
     const scores = {};
     scoresSnap.forEach(scoreDoc => {
