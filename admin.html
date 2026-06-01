@@ -390,6 +390,12 @@ async function loadTournamentData(tourId) {
     
     updatePlayerList();
     
+    // Load pools and scoring rules
+    if (data.poolsJson) {
+      currentPools = data.poolsJson;
+      poolScoringRules = data.poolScoringRules || {};
+    }
+    
     // Determine which tab to show
     if (data.poolsJson) {
       // Pools already generated - show live/round tabs
@@ -598,6 +604,9 @@ async function generateR1Pools() {
     alert('✓ Round 1 Pools generated!');
     document.getElementById('genR1Btn').style.display = 'none';
     
+    // Store pools in currentPools for editing
+    currentPools = poolsJson;
+    
     // Check if pools are all the same size
     const poolSizes = pools.map(p => p.length);
     const allEqual = poolSizes.every(size => size === poolSizes[0]);
@@ -609,7 +618,8 @@ async function generateR1Pools() {
     document.getElementById('liveRankingsTabBtn').style.display = 'block';
     document.getElementById('liveScoringTabBtn').style.display = 'block';
     
-    loadR1Data();
+    // Show scoring rules modal
+    showScoringRulesModal();
   } catch (e) {
     console.error('Error generating R1 pools:', e);
     alert('Error: ' + e.message);
@@ -676,6 +686,99 @@ async function savePoolSpecs() {
     
     // Show scoring rules modal
     showScoringRulesModal();
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+function showScoringRulesModal() {
+  const pools = JSON.parse(currentPools);
+  
+  // Group pools by size and create default rules
+  const poolsBySize = {};
+  pools.forEach((pool, idx) => {
+    const size = pool.length;
+    if (!poolsBySize[size]) {
+      poolsBySize[size] = [];
+    }
+    poolsBySize[size].push(idx);
+  });
+  
+  // Initialize poolScoringRules with defaults
+  poolScoringRules = {};
+  pools.forEach((pool, idx) => {
+    const size = pool.length;
+    if (!poolScoringRules[size]) {
+      // Set defaults based on pool size
+      if (size === 3) {
+        poolScoringRules[size] = { targetScore: 21, maxScore: 28 };
+      } else {
+        poolScoringRules[size] = { targetScore: 15, maxScore: 21 };
+      }
+    }
+  });
+  
+  let html = '<div style="display: flex; flex-direction: column; gap: 1.5rem;">';
+  
+  Object.keys(poolsBySize).forEach(size => {
+    const poolIndices = poolsBySize[size];
+    const rules = poolScoringRules[size];
+    const poolLetters = poolIndices.map(i => String.fromCharCode(65 + i)).join(', ');
+    
+    html += `
+      <div style="padding: 1rem; background: #faf9f7; border-radius: 8px;">
+        <div style="font-weight: 600; margin-bottom: 1rem;">${size}-Player Pools (${poolLetters})</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div>
+            <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Play To (Target Score)</label>
+            <input type="number" id="targetScore_${size}" value="${rules.targetScore}" min="10" max="30" style="width: 100%; padding: 8px; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 12px;"/>
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Max Score (Cap)</label>
+            <input type="number" id="maxScore_${size}" value="${rules.maxScore}" min="15" max="35" style="width: 100%; padding: 8px; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 12px;"/>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += '</div>';
+  document.getElementById('scoringRulesContent').innerHTML = html;
+  document.getElementById('scoringRulesOverlay').classList.add('active');
+  document.getElementById('scoringRulesModal').classList.add('active');
+}
+
+function closeScoringRulesModal() {
+  document.getElementById('scoringRulesOverlay').classList.remove('active');
+  document.getElementById('scoringRulesModal').classList.remove('active');
+}
+
+async function saveScoringRules() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    // Collect rules from inputs
+    const pools = JSON.parse(currentPools);
+    const poolSizes = new Set(pools.map(p => p.length));
+    
+    poolSizes.forEach(size => {
+      const targetScore = parseInt(document.getElementById(`targetScore_${size}`).value);
+      const maxScore = parseInt(document.getElementById(`maxScore_${size}`).value);
+      
+      if (targetScore && maxScore) {
+        poolScoringRules[size] = { targetScore, maxScore };
+      }
+    });
+    
+    // Save to Firebase
+    await db.collection('tournaments').doc(currentTourId).update({
+      poolScoringRules: poolScoringRules
+    });
+    
+    alert('✓ Scoring rules saved!');
+    closeScoringRulesModal();
+    loadR1Data();
   } catch (e) {
     console.error('Error:', e);
     alert('Error: ' + e.message);
