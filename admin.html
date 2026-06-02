@@ -1704,8 +1704,14 @@ async function deleteTournament(tourId, tourName) {
 
 // Initialize
 window.addEventListener('load', () => {
+  console.log('Page loaded, initializing Firebase...');
   initFirebase();
-  loadTournamentList();
+  
+  // Give Firebase a moment to initialize, then load tournaments
+  setTimeout(() => {
+    console.log('Calling loadTournamentList after delay. firebaseReady:', firebaseReady);
+    loadTournamentList();
+  }, 100);
 });
 </script>
 
