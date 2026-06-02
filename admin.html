@@ -77,6 +77,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   <button type="button" class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
   <button type="button" class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
   <button type="button" class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
+  <button type="button" class="tab-btn" id="bracketTabBtn" onclick="showTab('bracket')" style="display: none;">Bracket</button>
   <button type="button" class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
   <button type="button" class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
 </div>
@@ -99,6 +100,14 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   <div class="card">
     <div class="card-title">All Scores by Pool & Round</div>
     <div id="liveScoringList"></div>
+  </div>
+</div>
+
+<!-- Bracket Tab -->
+<div id="bracketTab" class="hidden">
+  <div class="card">
+    <div class="card-title">Tournament Bracket & Standings</div>
+    <div id="bracketContent"></div>
   </div>
 </div>
 
@@ -182,6 +191,24 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   <button class="btn primary" style="width: 100%; margin-top: 1rem;" onclick="saveScoringRules()">Save Scoring Rules</button>
 </div>
 
+<!-- Bracket Type Selection Modal -->
+
+<div class="overlay" id="bracketTypeOverlay"></div>
+<div class="modal" id="bracketTypeModal" style="max-width: 500px;">
+  <button onclick="closeBracketTypeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+  <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">Choose Tournament Format for Round 2</div>
+  <div style="display: flex; flex-direction: column; gap: 1rem;">
+    <button type="button" class="btn primary" onclick="generateUpperLowerBracket()" style="padding: 1rem; text-align: left;">
+      <div style="font-weight: 600;">⬆️ Upper/Lower Bracket</div>
+      <div style="font-size: 12px; color: #ccc; margin-top: 4px;">Top half → Upper bracket, Rest → Lower bracket</div>
+    </button>
+    <button type="button" class="btn primary" onclick="generateR2Pools()" style="padding: 1rem; text-align: left; background: #3b82f6; border-color: #3b82f6;">
+      <div style="font-weight: 600;">🏊 Pool Play (Round 2)</div>
+      <div style="font-size: 12px; color: #ccc; margin-top: 4px;">Ranked pools based on Round 1 standings</div>
+    </button>
+  </div>
+</div>
+
 <!-- Firebase Scripts -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -252,12 +279,14 @@ function showTab(tab) {
   const setupTab = document.getElementById('setupTab');
   const liveRankingsTab = document.getElementById('liveRankingsTab');
   const liveScoringTab = document.getElementById('liveScoringTab');
+  const bracketTab = document.getElementById('bracketTab');
   const r1Tab = document.getElementById('r1Tab');
   const r2Tab = document.getElementById('r2Tab');
   
   if (setupTab) setupTab.classList.add('hidden');
   if (liveRankingsTab) liveRankingsTab.classList.add('hidden');
   if (liveScoringTab) liveScoringTab.classList.add('hidden');
+  if (bracketTab) bracketTab.classList.add('hidden');
   if (r1Tab) r1Tab.classList.add('hidden');
   if (r2Tab) r2Tab.classList.add('hidden');
   
@@ -275,6 +304,9 @@ function showTab(tab) {
   } else if (tab === 'liveScoring') {
     if (liveScoringTab) liveScoringTab.classList.remove('hidden');
     loadLiveScoring();
+  } else if (tab === 'bracket') {
+    if (bracketTab) bracketTab.classList.remove('hidden');
+    loadBracket();
   } else if (tab === 'r1') {
     if (r1Tab) r1Tab.classList.remove('hidden');
     loadR1Data();
@@ -401,6 +433,7 @@ async function loadTournamentData(tourId) {
       // Pools already generated - show live/round tabs
       document.getElementById('liveRankingsTabBtn').style.display = 'block';
       document.getElementById('liveScoringTabBtn').style.display = 'block';
+      document.getElementById('bracketTabBtn').style.display = 'block';
       document.getElementById('r1TabBtn').style.display = 'block';
       
       if (data.r2poolsJson) {
@@ -617,6 +650,7 @@ async function generateR1Pools() {
     // Enable Live tabs
     document.getElementById('liveRankingsTabBtn').style.display = 'block';
     document.getElementById('liveScoringTabBtn').style.display = 'block';
+    document.getElementById('bracketTabBtn').style.display = 'block';
     
     // Show scoring rules modal
     showScoringRulesModal();
@@ -634,8 +668,22 @@ function editPoolSpecs() {
   }
   
   const pools = JSON.parse(poolsJson);
-  let html = '<div style="max-height: 400px; overflow-y: auto;">';
   
+  // Find players already in pools
+  const playersInPools = new Set();
+  pools.forEach(pool => {
+    pool.forEach(player => {
+      playersInPools.add(player);
+    });
+  });
+  
+  // Find available players
+  const availablePlayers = currentPlayers.filter(p => !playersInPools.has(p));
+  
+  let html = '<div style="max-height: 500px; overflow-y: auto;">';
+  
+  // Show current pools
+  html += '<div style="margin-bottom: 1.5rem;"><div style="font-weight: 600; margin-bottom: 1rem;">Current Pools</div>';
   pools.forEach((pool, idx) => {
     const poolLetter = String.fromCharCode(65 + idx);
     html += `<div style="margin-bottom: 1rem; padding: 1rem; background: #faf9f7; border-radius: 8px;">`;
@@ -653,6 +701,27 @@ function editPoolSpecs() {
     
     html += `</div></div>`;
   });
+  html += '</div>';
+  
+  // Show available players if any
+  if (availablePlayers.length > 0) {
+    html += '<div style="padding: 1rem; background: #fef3c7; border-radius: 8px; border: 1px solid #fcd34d;"><div style="font-weight: 600; margin-bottom: 1rem; color: #92400e;">Available Players to Add</div>';
+    html += '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
+    
+    availablePlayers.forEach(player => {
+      html += `
+        <div style="background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #fcd34d; display: flex; align-items: center; gap: 8px;">
+          <span>${player}</span>
+          <select onchange="addPlayerToPool(this.value, '${player}')" style="padding: 4px; border: 1px solid #d5d4d0; border-radius: 4px; font-size: 11px;">
+            <option value="">Add to Pool...</option>
+            ${pools.map((p, idx) => `<option value="${idx}">Pool ${String.fromCharCode(65 + idx)}</option>`).join('')}
+          </select>
+        </div>
+      `;
+    });
+    
+    html += '</div></div>';
+  }
   
   html += '</div>';
   document.getElementById('poolSpecContent').innerHTML = html;
@@ -671,6 +740,21 @@ function removePlayerFromPool(poolIdx, playerIdx) {
   pools[poolIdx].splice(playerIdx, 1);
   currentPools = JSON.stringify(pools);
   editPoolSpecs(); // Refresh the modal
+}
+
+function addPlayerToPool(poolIdx, playerName) {
+  if (!poolIdx || !playerName) return;
+  
+  if (!currentPools) return;
+  const pools = JSON.parse(currentPools);
+  const idx = parseInt(poolIdx);
+  
+  // Add player to pool
+  if (!pools[idx].includes(playerName)) {
+    pools[idx].push(playerName);
+    currentPools = JSON.stringify(pools);
+    editPoolSpecs(); // Refresh the modal
+  }
 }
 
 async function savePoolSpecs() {
@@ -919,7 +1003,7 @@ async function finalizeR1() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
     
-    const result = confirm('Finalize Round 1 and generate Round 2 Pools?');
+    const result = confirm('Finalize Round 1?');
     if (!result) return;
     
     const doc = await db.collection('tournaments').doc(currentTourId).get();
@@ -965,8 +1049,83 @@ async function finalizeR1() {
       return b.diff - a.diff;
     });
 
-    // Generate R2 pools
-    const r1pools = JSON.parse(data.poolsJson);
+    // Save R1 rankings and finalization status
+    const r1RankingsJson = JSON.stringify(ranked);
+    await db.collection('tournaments').doc(currentTourId).update({
+      r1RankingsJson: r1RankingsJson,
+      r1Finalized: true
+    });
+
+    // Show bracket type selection modal
+    showBracketTypeModal();
+    document.getElementById('finalizeR1Btn').style.display = 'none';
+    
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+function showBracketTypeModal() {
+  document.getElementById('bracketTypeOverlay').style.display = 'block';
+  document.getElementById('bracketTypeModal').style.display = 'block';
+}
+
+function closeBracketTypeModal() {
+  document.getElementById('bracketTypeOverlay').style.display = 'none';
+  document.getElementById('bracketTypeModal').style.display = 'none';
+}
+
+async function generateUpperLowerBracket() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const ranked = JSON.parse(data.r1RankingsJson);
+    
+    const mid = Math.ceil(ranked.length / 2);
+    const upperBracket = ranked.slice(0, mid).map(p => p.name);
+    const lowerBracket = ranked.slice(mid).map(p => p.name);
+    
+    // Store bracket structure
+    const bracketStructure = {
+      type: 'elimination',
+      upper: [upperBracket],
+      lower: [lowerBracket],
+      upperResults: [],
+      lowerResults: []
+    };
+    
+    await db.collection('tournaments').doc(currentTourId).update({
+      bracketStructureJson: JSON.stringify(bracketStructure),
+      status: 'round2'
+    });
+    
+    closeBracketTypeModal();
+    alert('✓ Round 1 Finalized!\n✓ Upper/Lower Brackets Created!');
+    
+    // Show bracket tab
+    document.getElementById('r2TabBtn').style.display = 'block';
+    showTab('bracket');
+    loadBracket();
+    
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+async function generateR2Pools() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const ranked = JSON.parse(data.r1RankingsJson);
+    const players = data.players;
+    
+    // Generate R2 pools based on rankings
     const r2pools = [];
     const maxPoolSize = 5;
     const numPools = Math.ceil(players.length / maxPoolSize);
@@ -978,22 +1137,20 @@ async function finalizeR1() {
       r2pools[idx % numPools].push(player.name);
     });
 
-    const r1RankingsJson = JSON.stringify(ranked);
     const r2poolsJson = JSON.stringify(r2pools);
 
     await db.collection('tournaments').doc(currentTourId).update({
-      r1RankingsJson: r1RankingsJson,
-      r1Finalized: true,
       r2poolsJson: r2poolsJson,
       status: 'round2'
     });
 
+    closeBracketTypeModal();
     alert('✓ Round 1 Finalized!\n✓ Round 2 Pools Generated!');
     
     // Enable R2 tab and switch to it
     document.getElementById('r2TabBtn').style.display = 'block';
-    document.getElementById('finalizeR1Btn').style.display = 'none';
     showTab('r2');
+    
   } catch (e) {
     console.error('Error:', e);
     alert('Error: ' + e.message);
@@ -1187,6 +1344,208 @@ async function loadLiveRankings() {
     
     // Auto refresh
     setTimeout(() => loadLiveRankings(), 5000);
+  } catch (e) {
+    console.error('Error:', e);
+  }
+}
+
+async function loadBracket() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    const scores = {};
+    scoresSnap.forEach(doc => {
+      scores[doc.id] = doc.data();
+    });
+    
+    // Calculate standings for each player
+    const playerStats = {};
+    data.players.forEach(p => {
+      playerStats[p] = { wins: 0, losses: 0, pf: 0, pa: 0 };
+    });
+    
+    Object.values(scores).forEach(score => {
+      if (score.t1 && score.t2) {
+        const t1Players = Array.isArray(score.t1) ? score.t1 : [score.t1];
+        const t2Players = Array.isArray(score.t2) ? score.t2 : [score.t2];
+        
+        t1Players.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s1 || 0;
+            playerStats[p].pa += score.s2 || 0;
+            if (score.s1 > score.s2) playerStats[p].wins++;
+            else if (score.s1 < score.s2) playerStats[p].losses++;
+          }
+        });
+        
+        t2Players.forEach(p => {
+          if (playerStats[p]) {
+            playerStats[p].pf += score.s2 || 0;
+            playerStats[p].pa += score.s1 || 0;
+            if (score.s2 > score.s1) playerStats[p].wins++;
+            else if (score.s2 < score.s1) playerStats[p].losses++;
+          }
+        });
+      }
+    });
+    
+    let html = '';
+    
+    // Check if this is upper/lower bracket format
+    if (data.bracketStructureJson) {
+      const bracketStructure = JSON.parse(data.bracketStructureJson);
+      
+      if (bracketStructure.type === 'elimination') {
+        html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">';
+        
+        // Upper Bracket
+        html += '<div>';
+        html += '<div style="font-weight: 600; font-size: 16px; margin-bottom: 1rem; padding: 0.5rem; background: #dbeafe; border-radius: 6px; text-align: center;">🏆 Upper Bracket</div>';
+        html += '<div style="display: flex; flex-direction: column; gap: 1rem;">';
+        
+        bracketStructure.upper.forEach((bracket, idx) => {
+          const bracketPlayers = bracket.map(p => ({
+            name: p,
+            ...playerStats[p]
+          })).sort((a, b) => {
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            return (b.pf - b.pa) - (a.pf - a.pa);
+          });
+          
+          bracketPlayers.forEach((player, rank) => {
+            const diff = player.pf - player.pa;
+            const diffStr = diff >= 0 ? `+${diff}` : diff;
+            html += `
+              <div style="padding: 8px; background: #fff; border-radius: 6px; border: 2px solid #0369a1; border-left: 4px solid #0369a1;">
+                <div style="font-weight: 600; margin-bottom: 4px;">${rank + 1}. ${player.name}</div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 12px;">
+                  <div style="text-align: center; padding: 4px; background: #f0fdf4; border-radius: 4px;">
+                    <div style="font-size: 10px; color: #666;">W</div>
+                    <div style="font-weight: 600; color: #16a34a;">${player.wins}</div>
+                  </div>
+                  <div style="text-align: center; padding: 4px; background: #fee2e2; border-radius: 4px;">
+                    <div style="font-size: 10px; color: #666;">L</div>
+                    <div style="font-weight: 600; color: #dc2626;">${player.losses}</div>
+                  </div>
+                  <div style="text-align: center; padding: 4px; background: #dbeafe; border-radius: 4px;">
+                    <div style="font-size: 10px; color: #666;">Diff</div>
+                    <div style="font-weight: 600; color: #0369a1;">${diffStr}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        });
+        
+        html += '</div></div>';
+        
+        // Lower Bracket
+        html += '<div>';
+        html += '<div style="font-weight: 600; font-size: 16px; margin-bottom: 1rem; padding: 0.5rem; background: #fee2e2; border-radius: 6px; text-align: center;">Lower Bracket</div>';
+        html += '<div style="display: flex; flex-direction: column; gap: 1rem;">';
+        
+        bracketStructure.lower.forEach((bracket, idx) => {
+          const bracketPlayers = bracket.map(p => ({
+            name: p,
+            ...playerStats[p]
+          })).sort((a, b) => {
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            return (b.pf - b.pa) - (a.pf - a.pa);
+          });
+          
+          bracketPlayers.forEach((player, rank) => {
+            const diff = player.pf - player.pa;
+            const diffStr = diff >= 0 ? `+${diff}` : diff;
+            html += `
+              <div style="padding: 8px; background: #fff; border-radius: 6px; border: 2px solid #dc2626; border-left: 4px solid #dc2626;">
+                <div style="font-weight: 600; margin-bottom: 4px;">${rank + 1}. ${player.name}</div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 12px;">
+                  <div style="text-align: center; padding: 4px; background: #f0fdf4; border-radius: 4px;">
+                    <div style="font-size: 10px; color: #666;">W</div>
+                    <div style="font-weight: 600; color: #16a34a;">${player.wins}</div>
+                  </div>
+                  <div style="text-align: center; padding: 4px; background: #fee2e2; border-radius: 4px;">
+                    <div style="font-size: 10px; color: #666;">L</div>
+                    <div style="font-weight: 600; color: #dc2626;">${player.losses}</div>
+                  </div>
+                  <div style="text-align: center; padding: 4px; background: #dbeafe; border-radius: 4px;">
+                    <div style="font-size: 10px; color: #666;">Diff</div>
+                    <div style="font-weight: 600; color: #0369a1;">${diffStr}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        });
+        
+        html += '</div></div></div>';
+      }
+    } else {
+      // Display R1 pools or R2 pools
+      const poolsJson = data.r2poolsJson || data.poolsJson;
+      if (!poolsJson) {
+        document.getElementById('bracketContent').innerHTML = '<p style="color: #aaa;">Pools not yet generated</p>';
+        return;
+      }
+      
+      const pools = JSON.parse(poolsJson);
+      html = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">';
+      
+      pools.forEach((pool, idx) => {
+        const poolLetter = String.fromCharCode(65 + idx);
+        const poolTitle = data.r2poolsJson ? `Pool ${poolLetter} (R2)` : `Pool ${poolLetter}`;
+        const borderColor = data.r2poolsJson ? '#3b82f6' : '#16a34a';
+        
+        html += `<div style="padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid ${borderColor};">`;
+        html += `<div style="font-weight: 600; margin-bottom: 1rem; font-size: 14px;">${poolTitle}</div>`;
+        
+        const poolPlayers = pool.map(p => ({
+          name: p,
+          ...playerStats[p]
+        })).sort((a, b) => {
+          if (b.wins !== a.wins) return b.wins - a.wins;
+          return (b.pf - b.pa) - (a.pf - a.pa);
+        });
+        
+        poolPlayers.forEach((player, rank) => {
+          const diff = player.pf - player.pa;
+          const diffStr = diff >= 0 ? `+${diff}` : diff;
+          html += `
+            <div style="padding: 8px; background: #fff; border-radius: 6px; margin-bottom: 8px; border: 1px solid #e5e4e0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div style="font-weight: 600;">${rank + 1}. ${player.name}</div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 12px;">
+                <div style="text-align: center; padding: 4px; background: #f0fdf4; border-radius: 4px;">
+                  <div style="font-size: 10px; color: #666;">W</div>
+                  <div style="font-weight: 600; color: #16a34a;">${player.wins}</div>
+                </div>
+                <div style="text-align: center; padding: 4px; background: #fee2e2; border-radius: 4px;">
+                  <div style="font-size: 10px; color: #666;">L</div>
+                  <div style="font-weight: 600; color: #dc2626;">${player.losses}</div>
+                </div>
+                <div style="text-align: center; padding: 4px; background: #dbeafe; border-radius: 4px;">
+                  <div style="font-size: 10px; color: #666;">Diff</div>
+                  <div style="font-weight: 600; color: #0369a1;">${diffStr}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `</div>`;
+      });
+      
+      html += '</div>';
+    }
+    
+    document.getElementById('bracketContent').innerHTML = html;
+    
+    // Auto-refresh every 5 seconds
+    setTimeout(() => loadBracket(), 5000);
   } catch (e) {
     console.error('Error:', e);
   }
