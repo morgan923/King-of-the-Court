@@ -61,7 +61,9 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
     <div class="card">
       <div class="card-title">Select Tournament or Create New</div>
       <button class="btn primary" onclick="showSetup(null)" style="margin-bottom: 1rem;">+ New Tournament</button>
-      <div class="tour-list" id="tourListContainer"></div>
+      <div class="tour-list" id="tourListContainer">
+        <div style="padding: 12px; color: #aaa; text-align: center;">Loading tournaments...</div>
+      </div>
     </div>
   </div>
 
@@ -75,6 +77,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 ```
 <div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
   <button type="button" class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
+  <button type="button" class="tab-btn" id="rulesTabBtn" onclick="showTab('rules')" style="display: none;">Rules</button>
   <button type="button" class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
   <button type="button" class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
   <button type="button" class="tab-btn" id="bracketTabBtn" onclick="showTab('bracket')" style="display: none;">Bracket</button>
@@ -327,12 +330,21 @@ function showTab(tab) {
 
 async function loadTournamentList() {
   try {
-    if (!firebaseReady || !db) return;
+    console.log('loadTournamentList called. firebaseReady:', firebaseReady, 'db:', db);
+    if (!firebaseReady || !db) {
+      console.warn('Firebase not ready yet');
+      document.getElementById('tourListContainer').innerHTML = '<div style="padding: 12px; color: #aaa; text-align: center;">Loading...</div>';
+      return;
+    }
     
+    console.log('Fetching tournaments from Firestore...');
     const snap = await db.collection('tournaments').get();
+    console.log('Got tournaments snapshot. Docs:', snap.size);
+    
     let html = '';
     snap.forEach(doc => {
       const data = doc.data();
+      console.log('Tournament:', doc.id, data.name);
       const status = data.status || 'setup';
       
       // Determine status badge
@@ -367,10 +379,16 @@ async function loadTournamentList() {
       `;
     });
     
-    if (!html) html = '<div style="padding: 12px; color: #aaa; text-align: center;">No tournaments yet</div>';
+    if (!html) {
+      html = '<div style="padding: 12px; color: #aaa; text-align: center;">No tournaments yet. Create one to get started!</div>';
+      console.log('No tournaments found');
+    }
+    
     document.getElementById('tourListContainer').innerHTML = html;
+    console.log('Tournament list updated');
   } catch (e) {
-    console.error('Error:', e);
+    console.error('Error loading tournaments:', e);
+    document.getElementById('tourListContainer').innerHTML = `<div style="padding: 12px; color: #dc2626; text-align: center;">Error: ${e.message}</div>`;
   }
 }
 
