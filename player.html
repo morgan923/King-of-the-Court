@@ -633,12 +633,14 @@ function isValidScore() {
     maxScore = poolScoringRules[poolSize].maxScore;
   }
   
+  // If either team reaches max score, allow submission (game ends at cap)
+  if (s1 === maxScore || s2 === maxScore) return true;
+  
   // Winner must be at least targetScore
   if (winner < targetScore) return false;
   
-  // Must win by 2 OR reach the max score
-  if (winner === maxScore) return true; // At cap
-  if (winner - loser >= 2) return true; // Win by 2
+  // Must win by 2
+  if (winner - loser >= 2) return true;
   
   return false;
 }
