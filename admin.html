@@ -165,6 +165,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
     <div id="r1PoolsStatus"></div>
     <div id="r1ScoresList"></div>
     <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
+    <button class="btn primary" id="generateR2Btn" onclick="showBracketTypeModal()" style="margin-top: 1rem; display: none; background: #10b981; border-color: #10b981;">Generate Round 2 Format</button>
   </div>
 </div>
 
@@ -1018,6 +1019,13 @@ async function loadR1Data() {
       document.getElementById('finalizeR1Btn').style.display = 'block';
     } else {
       document.getElementById('finalizeR1Btn').style.display = 'none';
+    }
+    
+    // Show generate Round 2 button if R1 finalized but R2 not yet created
+    if (data.r1Finalized && !data.r2poolsJson && !data.bracketStructureJson) {
+      document.getElementById('generateR2Btn').style.display = 'block';
+    } else {
+      document.getElementById('generateR2Btn').style.display = 'none';
     }
     
     // Hide generate button if pools already exist
