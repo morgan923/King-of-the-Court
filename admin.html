@@ -169,6 +169,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
     <div id="r2Tab" class="hidden">
       <div class="card">
         <div class="card-title">Round 2 - Live Scoring</div>
+        <button class="btn" id="editR2PoolsBtn" onclick="editR2Pools()" style="margin-bottom: 1rem; display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit R2 Pools</button>
         <div id="r2PoolsStatus"></div>
         <div id="r2ScoresList"></div>
         <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
@@ -181,9 +182,9 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 <div class="overlay" id="poolSpecOverlay"></div>
 <div class="modal" id="poolSpecModal" style="max-width: 500px;">
   <button onclick="closePoolSpecModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
-  <div style="font-weight: 600; margin-bottom: 1rem; font-size: 14px;">Edit Pool Specifications</div>
+  <div style="font-weight: 600; margin-bottom: 1rem; font-size: 14px;" id="poolSpecTitle">Edit Pool Specifications</div>
   <div id="poolSpecContent"></div>
-  <button class="btn primary" style="width: 100%; margin-top: 1rem;" onclick="savePoolSpecs()">Update Pools</button>
+  <button class="btn primary" style="width: 100%; margin-top: 1rem;" onclick="saveCurrentPoolSpecs()" id="poolSpecSaveBtn">Update Pools</button>
 </div>
 
 <!-- Pool Scoring Rules Modal -->
@@ -726,6 +727,9 @@ function editPoolSpecs() {
     return;
   }
   
+  window.editingPoolMode = 'r1'; // Track which mode we're in
+  document.getElementById('poolSpecTitle').textContent = 'Edit Pool Specifications';
+  document.getElementById('poolSpecSaveBtn').textContent = 'Update Pools';
   const pools = JSON.parse(poolsJson);
   
   // Find players already in pools
@@ -832,6 +836,131 @@ async function savePoolSpecs() {
   } catch (e) {
     console.error('Error:', e);
     alert('Error: ' + e.message);
+  }
+}
+
+// ========== R2 POOL EDITING ==========
+
+let currentR2Pools = null;
+
+function editR2Pools() {
+  const r2poolsJson = currentR2Pools;
+  if (!r2poolsJson) {
+    alert('No R2 pools generated yet');
+    return;
+  }
+  
+  window.editingPoolMode = 'r2'; // Track which mode we're in
+  document.getElementById('poolSpecTitle').textContent = 'Edit Round 2 Pools';
+  document.getElementById('poolSpecSaveBtn').textContent = 'Update R2 Pools';
+  const pools = JSON.parse(r2poolsJson);
+  
+  // Find players already in pools
+  const playersInPools = new Set();
+  pools.forEach(pool => {
+    pool.forEach(player => {
+      playersInPools.add(player);
+    });
+  });
+  
+  // Find available players (those not in pools)
+  const availablePlayers = currentPlayers.filter(p => !playersInPools.has(p));
+  
+  let html = '<div style="max-height: 500px; overflow-y: auto;">';
+  
+  // Show current pools
+  html += '<div style="margin-bottom: 1.5rem;"><div style="font-weight: 600; margin-bottom: 1rem;">Current Round 2 Pools</div>';
+  pools.forEach((pool, idx) => {
+    const poolLetter = String.fromCharCode(65 + idx);
+    html += `<div style="margin-bottom: 1rem; padding: 1rem; background: #faf9f7; border-radius: 8px;">`;
+    html += `<div style="font-weight: 600; margin-bottom: 0.5rem;">Pool ${poolLetter} (${pool.length} players)</div>`;
+    html += `<div style="display: flex; flex-wrap: wrap; gap: 8px;">`;
+    
+    pool.forEach((player, playerIdx) => {
+      html += `
+        <div style="background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #e5e4e0; display: flex; align-items: center; gap: 8px;">
+          <span>${player}</span>
+          <button type="button" onclick="removePlayerFromR2Pool(${idx}, ${playerIdx})" style="background: none; border: none; color: #dc2626; cursor: pointer; font-size: 16px;">✕</button>
+        </div>
+      `;
+    });
+    
+    html += `</div></div>`;
+  });
+  html += '</div>';
+  
+  // Show available players if any
+  if (availablePlayers.length > 0) {
+    html += '<div style="padding: 1rem; background: #fef3c7; border-radius: 8px; border: 1px solid #fcd34d;"><div style="font-weight: 600; margin-bottom: 1rem; color: #92400e;">Available Players to Add</div>';
+    html += '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
+    
+    availablePlayers.forEach(player => {
+      html += `
+        <div style="background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #fcd34d; display: flex; align-items: center; gap: 8px;">
+          <span>${player}</span>
+          <select onchange="addPlayerToR2Pool(this.value, '${player}')" style="padding: 4px; border: 1px solid #d5d4d0; border-radius: 4px; font-size: 11px;">
+            <option value="">Add to Pool...</option>
+            ${pools.map((p, idx) => `<option value="${idx}">Pool ${String.fromCharCode(65 + idx)}</option>`).join('')}
+          </select>
+        </div>
+      `;
+    });
+    
+    html += '</div></div>';
+  }
+  
+  html += '</div>';
+  document.getElementById('poolSpecContent').innerHTML = html;
+  document.getElementById('poolSpecOverlay').classList.add('active');
+  document.getElementById('poolSpecModal').classList.add('active');
+}
+
+function removePlayerFromR2Pool(poolIdx, playerIdx) {
+  if (!currentR2Pools) return;
+  const pools = JSON.parse(currentR2Pools);
+  pools[poolIdx].splice(playerIdx, 1);
+  currentR2Pools = JSON.stringify(pools);
+  editR2Pools(); // Refresh the modal
+}
+
+function addPlayerToR2Pool(poolIdx, playerName) {
+  if (!poolIdx || !playerName) return;
+  
+  if (!currentR2Pools) return;
+  const pools = JSON.parse(currentR2Pools);
+  const idx = parseInt(poolIdx);
+  
+  // Add player to pool
+  if (!pools[idx].includes(playerName)) {
+    pools[idx].push(playerName);
+    currentR2Pools = JSON.stringify(pools);
+    editR2Pools(); // Refresh the modal
+  }
+}
+
+async function saveR2PoolChanges() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    await db.collection('tournaments').doc(currentTourId).update({
+      r2poolsJson: currentR2Pools
+    });
+    
+    alert('✓ R2 Pools updated!');
+    closePoolSpecModal();
+    loadR2Data();
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+// Dispatcher function - calls right save based on mode
+async function saveCurrentPoolSpecs() {
+  if (window.editingPoolMode === 'r1') {
+    await savePoolSpecs();
+  } else if (window.editingPoolMode === 'r2') {
+    await saveR2PoolChanges();
   }
 }
 
@@ -1443,9 +1572,14 @@ async function loadR2Data() {
     if (!r2poolsJson) {
       document.getElementById('r2PoolsStatus').innerHTML = '<p style="color: #aaa;">Round 2 not yet generated. Finalize Round 1 first.</p>';
       document.getElementById('r2ScoresList').innerHTML = '';
+      document.getElementById('editR2PoolsBtn').style.display = 'none';
       document.getElementById('genR2Btn').style.display = 'none';
       return;
     }
+    
+    // Store R2 pools for editing
+    currentR2Pools = r2poolsJson;
+    document.getElementById('editR2PoolsBtn').style.display = 'inline-block';
     
     const r2pools = JSON.parse(r2poolsJson);
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
