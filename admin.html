@@ -230,10 +230,15 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 <div class="modal" id="poolPlayerCountModal" style="max-width: 400px;">
   <button onclick="closePoolPlayerCountModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">How many top players for Round 2?</div>
-  <div id="poolCountOptions" style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
-    <!-- Options will be generated based on total players -->
+  <div style="margin-bottom: 1.5rem;">
+    <label style="display: block; font-size: 13px; margin-bottom: 0.5rem; color: #666;">Number of Players</label>
+    <input type="number" id="r2PlayerCount" min="4" max="999" placeholder="Enter number (e.g., 8, 12, 16)" style="width: 100%; padding: 0.75rem; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 14px;">
+    <div style="font-size: 11px; color: #999; margin-top: 0.5rem;" id="poolPreview"></div>
   </div>
-  <button type="button" class="btn" onclick="closePoolPlayerCountModal()" style="width: 100%;">Cancel</button>
+  <div style="display: flex; gap: 0.75rem;">
+    <button type="button" class="btn primary" onclick="submitR2PlayerCount()" style="flex: 1; background: #3b82f6; border-color: #3b82f6;">Generate Pools</button>
+    <button type="button" class="btn" onclick="closePoolPlayerCountModal()" style="flex: 1;">Cancel</button>
+  </div>
 </div>
 
 <!-- Firebase Scripts -->
