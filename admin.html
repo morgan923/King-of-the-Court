@@ -868,6 +868,17 @@ function editR2Pools() {
   
   let html = '<div style="max-height: 500px; overflow-y: auto;">';
   
+  // Pool management controls
+  html += '<div style="margin-bottom: 1.5rem; padding: 1rem; background: #f3f4f6; border-radius: 8px;">';
+  html += `<div style="font-weight: 600; margin-bottom: 0.5rem;">Pools: ${pools.length}</div>`;
+  html += '<div style="display: flex; gap: 0.5rem;">';
+  html += `<button type="button" onclick="addPoolToR2()" class="btn" style="flex: 1; font-size: 12px; padding: 0.5rem;">+ Add Pool</button>`;
+  if (pools.length > 1) {
+    html += `<button type="button" onclick="removePoolFromR2()" class="btn" style="flex: 1; font-size: 12px; padding: 0.5rem; background: #ef4444; border-color: #ef4444; color: #fff;">- Remove Pool</button>`;
+  }
+  html += '</div>';
+  html += '</div>';
+  
   // Show current pools
   html += '<div style="margin-bottom: 1.5rem;"><div style="font-weight: 600; margin-bottom: 1rem;">Current Round 2 Pools</div>';
   pools.forEach((pool, idx) => {
@@ -936,6 +947,36 @@ function addPlayerToR2Pool(poolIdx, playerName) {
     currentR2Pools = JSON.stringify(pools);
     editR2Pools(); // Refresh the modal
   }
+}
+
+function addPoolToR2() {
+  if (!currentR2Pools) return;
+  const pools = JSON.parse(currentR2Pools);
+  pools.push([]); // Add empty pool
+  currentR2Pools = JSON.stringify(pools);
+  editR2Pools(); // Refresh the modal
+}
+
+function removePoolFromR2() {
+  if (!currentR2Pools) return;
+  const pools = JSON.parse(currentR2Pools);
+  
+  if (pools.length <= 1) {
+    alert('Cannot remove the last pool');
+    return;
+  }
+  
+  // Get the last pool's players
+  const lastPool = pools[pools.length - 1];
+  if (lastPool.length > 0) {
+    const players = lastPool.join(', ');
+    const confirm_remove = confirm(`Remove last pool? (${lastPool.length} players will be unassigned)\n\nPlayers: ${players}`);
+    if (!confirm_remove) return;
+  }
+  
+  pools.pop(); // Remove last pool
+  currentR2Pools = JSON.stringify(pools);
+  editR2Pools(); // Refresh the modal
 }
 
 async function saveR2PoolChanges() {
