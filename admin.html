@@ -79,6 +79,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
       <button type="button" class="tab-btn" id="bracketTabBtn" onclick="showTab('bracket')" style="display: none;">Bracket</button>
       <button type="button" class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
       <button type="button" class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
+      <button type="button" class="tab-btn" id="r2RankingsTabBtn" onclick="showTab('r2rankings')" style="display: none;">Round 2 Rankings</button>
     </div>
 
     <!-- Live Rankings Tab -->
@@ -165,16 +166,25 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
       </div>
     </div>
 
-    <!-- Round 2 Tab -->
-    <div id="r2Tab" class="hidden">
+    <!-- Round 2 Rankings Tab -->
+    <div id="r2rankingsTab" class="hidden">
       <div class="card">
-        <div class="card-title">Round 2 - Live Scoring</div>
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-          <button class="btn" id="editR2PoolsBtn" onclick="editR2Pools()" style="display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit R2 Pools</button>
-          <button class="btn" id="recreateR2PoolsBtn" onclick="showRecreateR2Modal()" style="display: none; background: #8b5cf6; color: #fff; border-color: #8b5cf6;">Recreate R2 Pools</button>
+        <div class="card-title">Round 2 - Rankings (R1 Stats)</div>
+        <div id="r2RankingsTableContent"></div>
+      </div>
+    </div>
+      <div class="card">
+        <div class="card-title">Round 2 - Rankings & Scoring</div>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+          <button class="tab-btn" onclick="playerShowR2Tab('rankings')" style="background: #3b82f6; color: #fff; border-color: #3b82f6;">Rankings</button>
+          <button class="tab-btn" onclick="playerShowR2Tab('pools')" style="background: #fff; color: #000; border-color: #d5d4d0;">Pools</button>
+          <button class="tab-btn" id="editR2PoolsBtn" onclick="editR2Pools()" style="display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit R2 Pools</button>
+          <button class="tab-btn" id="recreateR2PoolsBtn" onclick="showRecreateR2Modal()" style="display: none; background: #8b5cf6; color: #fff; border-color: #8b5cf6;">Recreate R2 Pools</button>
         </div>
-        <div id="r2PoolsStatus"></div>
-        <div id="r2ScoresList"></div>
+        
+        <div id="r2RankingsContent"></div>
+        <div id="r2PoolsContent"></div>
+        
         <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
       </div>
     </div>
@@ -350,6 +360,7 @@ function showTab(tab) {
   const bracketTab = document.getElementById('bracketTab');
   const r1Tab = document.getElementById('r1Tab');
   const r2Tab = document.getElementById('r2Tab');
+  const r2rankingsTab = document.getElementById('r2rankingsTab');
   
   if (setupTab) setupTab.classList.add('hidden');
   if (rulesTab) rulesTab.classList.add('hidden');
@@ -358,6 +369,7 @@ function showTab(tab) {
   if (bracketTab) bracketTab.classList.add('hidden');
   if (r1Tab) r1Tab.classList.add('hidden');
   if (r2Tab) r2Tab.classList.add('hidden');
+  if (r2rankingsTab) r2rankingsTab.classList.add('hidden');
   
   // Deactivate all buttons
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -385,6 +397,9 @@ function showTab(tab) {
   } else if (tab === 'r2') {
     if (r2Tab) r2Tab.classList.remove('hidden');
     loadR2Data();
+  } else if (tab === 'r2rankings') {
+    if (r2rankingsTab) r2rankingsTab.classList.remove('hidden');
+    loadR2RankingsTable();
   }
   
   // Activate the correct button
@@ -1095,6 +1110,131 @@ async function submitRecreateR2Pools() {
   }
 }
 
+// ========== R2 RANKINGS & POOLS TABS ==========
+
+function playerShowR2Tab(tab) {
+  document.getElementById('r2RankingsContent').style.display = 'none';
+  document.getElementById('r2PoolsContent').style.display = 'none';
+  
+  const btns = document.querySelectorAll('#r2Tab .tab-btn');
+  btns.forEach((btn, idx) => {
+    if (idx < 2) btn.style.background = '#fff';
+    if (idx < 2) btn.style.color = '#000';
+    if (idx < 2) btn.style.borderColor = '#d5d4d0';
+  });
+  
+  if (tab === 'rankings') {
+    document.getElementById('r2RankingsContent').style.display = 'block';
+    btns[0].style.background = '#3b82f6';
+    btns[0].style.color = '#fff';
+    btns[0].style.borderColor = '#3b82f6';
+    loadR2Rankings();
+  } else if (tab === 'pools') {
+    document.getElementById('r2PoolsContent').style.display = 'block';
+    btns[1].style.background = '#3b82f6';
+    btns[1].style.color = '#fff';
+    btns[1].style.borderColor = '#3b82f6';
+    loadR2Pools();
+  }
+}
+
+async function loadR2Rankings() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    
+    if (!data.r2poolsJson) {
+      document.getElementById('r2RankingsContent').innerHTML = '<p style="color: #aaa;">Round 2 not yet generated</p>';
+      return;
+    }
+    
+    const r2pools = JSON.parse(data.r2poolsJson);
+    const r1rankings = JSON.parse(data.r1RankingsJson);
+    
+    // Get players in R2
+    const r2Players = new Set();
+    r2pools.forEach(pool => {
+      pool.forEach(player => {
+        r2Players.add(player);
+      });
+    });
+    
+    // Filter R1 rankings to only R2 players and keep their R1 stats
+    const r2rankings = r1rankings.filter(p => r2Players.has(p.name));
+    
+    // Create rankings table
+    let html = '<table class="score-table" style="width: 100%; margin-top: 1rem;">';
+    html += '<thead><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr></thead>';
+    html += '<tbody>';
+    
+    r2rankings.forEach((player, idx) => {
+      html += `<tr>
+        <td>${idx + 1}</td>
+        <td>${player.name}</td>
+        <td style="color: #16a34a; font-weight: 600;">${player.wins}</td>
+        <td style="color: #dc2626; font-weight: 600;">${player.losses}</td>
+        <td style="color: #3b82f6; font-weight: 600;">${player.diff}</td>
+        <td>${player.pf}</td>
+        <td>${player.pa}</td>
+      </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    html += `<div style="margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 8px; font-size: 13px; color: #666;">
+      <strong>${r2rankings.length} of ${r1rankings.length}</strong> players advanced to Round 2
+    </div>`;
+    
+    document.getElementById('r2RankingsContent').innerHTML = html;
+  } catch (e) {
+    console.error('Error:', e);
+    document.getElementById('r2RankingsContent').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
+  }
+}
+
+async function loadR2Pools() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    
+    if (!data.r2poolsJson) {
+      document.getElementById('r2PoolsContent').innerHTML = '<p style="color: #aaa;">Round 2 not yet generated</p>';
+      return;
+    }
+    
+    const r2pools = JSON.parse(data.r2poolsJson);
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    const scores = {};
+    scoresSnap.forEach(scoreDoc => {
+      scores[scoreDoc.id] = scoreDoc.data();
+    });
+    
+    let html = '';
+    
+    // Show pools and games
+    r2pools.forEach((pool, poolIdx) => {
+      const poolLetter = String.fromCharCode(65 + poolIdx);
+      html += `<div style="margin-bottom: 2rem; padding: 1rem; background: #faf9f7; border-radius: 8px; border-left: 4px solid #3b82f6;">
+        <div style="font-weight: 600; margin-bottom: 1rem;">Pool ${poolLetter} (${pool.length} players)</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem;">`;
+      
+      pool.forEach(player => {
+        html += `<span style="background: #fff; padding: 6px 12px; border-radius: 6px; border: 1px solid #d5d4d0; font-size: 12px;">${player}</span>`;
+      });
+      
+      html += '</div></div>';
+    });
+    
+    document.getElementById('r2PoolsContent').innerHTML = html;
+  } catch (e) {
+    console.error('Error:', e);
+    document.getElementById('r2PoolsContent').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
+  }
+}
+
 async function saveR2PoolChanges() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
@@ -1718,7 +1858,64 @@ async function generateR2Pools() {
   }
 }
 
-async function loadR2Data() {
+async function loadR2RankingsTable() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    
+    if (!data.r2poolsJson) {
+      document.getElementById('r2RankingsTableContent').innerHTML = '<p style="color: #aaa;">Round 2 not yet generated</p>';
+      return;
+    }
+    
+    const r2pools = JSON.parse(data.r2poolsJson);
+    const r1rankings = JSON.parse(data.r1RankingsJson);
+    
+    // Get players in R2
+    const r2Players = new Set();
+    r2pools.forEach(pool => {
+      pool.forEach(player => {
+        r2Players.add(player);
+      });
+    });
+    
+    // Filter R1 rankings to only R2 players and keep their R1 stats
+    const r2rankings = r1rankings.filter(p => r2Players.has(p.name));
+    
+    // Create rankings table
+    let html = '<table class="score-table" style="width: 100%; margin-top: 1rem;">';
+    html += '<thead><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr></thead>';
+    html += '<tbody>';
+    
+    r2rankings.forEach((player, idx) => {
+      html += `<tr>
+        <td>${idx + 1}</td>
+        <td>${player.name}</td>
+        <td style="color: #16a34a; font-weight: 600;">${player.wins}</td>
+        <td style="color: #dc2626; font-weight: 600;">${player.losses}</td>
+        <td style="color: #3b82f6; font-weight: 600;">${player.diff}</td>
+        <td>${player.pf}</td>
+        <td>${player.pa}</td>
+      </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    html += `<div style="margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 8px; font-size: 13px; color: #666;">
+      <strong style="color: #1f2937;">${r2rankings.length} of ${r1rankings.length}</strong> players advanced to Round 2<br>
+      <span style="font-size: 12px;">Showing Round 1 stats (W/L/Diff/PF/PA) for qualifying players</span>
+    </div>`;
+    
+    document.getElementById('r2RankingsTableContent').innerHTML = html;
+    
+    // Auto refresh every 5 seconds
+    setTimeout(() => loadR2RankingsTable(), 5000);
+  } catch (e) {
+    console.error('Error:', e);
+    document.getElementById('r2RankingsTableContent').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
+  }
+}
   try {
     if (!firebaseReady || !db || !currentTourId) return;
     
@@ -1738,6 +1935,10 @@ async function loadR2Data() {
     currentR2Pools = r2poolsJson;
     document.getElementById('editR2PoolsBtn').style.display = 'inline-block';
     document.getElementById('recreateR2PoolsBtn').style.display = 'inline-block';
+    document.getElementById('r2RankingsTabBtn').style.display = 'block';
+    
+    // Load rankings by default
+    playerShowR2Tab('rankings');
     
     const r2pools = JSON.parse(r2poolsJson);
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
