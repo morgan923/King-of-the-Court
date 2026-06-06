@@ -169,7 +169,10 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
     <div id="r2Tab" class="hidden">
       <div class="card">
         <div class="card-title">Round 2 - Live Scoring</div>
-        <button class="btn" id="editR2PoolsBtn" onclick="editR2Pools()" style="margin-bottom: 1rem; display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit R2 Pools</button>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+          <button class="btn" id="editR2PoolsBtn" onclick="editR2Pools()" style="display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit R2 Pools</button>
+          <button class="btn" id="recreateR2PoolsBtn" onclick="showRecreateR2Modal()" style="display: none; background: #8b5cf6; color: #fff; border-color: #8b5cf6;">Recreate R2 Pools</button>
+        </div>
         <div id="r2PoolsStatus"></div>
         <div id="r2ScoresList"></div>
         <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
@@ -204,6 +207,32 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 
 <!-- Pool Size Overlay -->
 <div class="overlay" id="poolSizeOverlay"></div>
+
+<!-- Recreate R2 Pools Modal -->
+<div class="modal" id="recreateR2Modal" style="max-width: 600px;">
+  <button onclick="closeRecreateR2Modal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+  <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">Recreate Round 2 Pools</div>
+  
+  <div style="margin-bottom: 1.5rem;">
+    <label style="display: block; font-size: 13px; margin-bottom: 0.5rem; color: #666;">How many top players for Round 2?</label>
+    <input type="number" id="recreateR2PlayerCount" min="4" max="999" placeholder="Enter number" style="width: 100%; padding: 0.75rem; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 14px; margin-bottom: 0.5rem;">
+    <div style="font-size: 11px; color: #999;" id="recreatePoolPreview1"></div>
+  </div>
+  
+  <div style="margin-bottom: 1.5rem;">
+    <label style="display: block; font-size: 13px; margin-bottom: 0.5rem; color: #666;">How many players per pool?</label>
+    <input type="number" id="recreatePoolSize" min="2" max="999" value="4" placeholder="Enter number" style="width: 100%; padding: 0.75rem; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 14px; margin-bottom: 0.5rem;">
+    <div style="font-size: 11px; color: #999;" id="recreatePoolPreview2"></div>
+  </div>
+  
+  <div style="display: flex; gap: 0.75rem;">
+    <button type="button" class="btn primary" onclick="submitRecreateR2Pools()" style="flex: 1; background: #8b5cf6; border-color: #8b5cf6;">Create Pools</button>
+    <button type="button" class="btn" onclick="closeRecreateR2Modal()" style="flex: 1;">Cancel</button>
+  </div>
+</div>
+
+<!-- Recreate R2 Overlay -->
+<div class="overlay" id="recreateR2Overlay"></div>
 <div class="modal" id="bracketTypeModal" style="max-width: 500px;">
   <button onclick="closeBracketTypeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">Choose Tournament Format for Round 2</div>
@@ -979,6 +1008,93 @@ function removePoolFromR2() {
   editR2Pools(); // Refresh the modal
 }
 
+// ========== RECREATE R2 POOLS ==========
+
+function showRecreateR2Modal() {
+  try {
+    if (!currentPlayers || currentPlayers.length === 0) {
+      alert('No players found');
+      return;
+    }
+    
+    document.getElementById('recreateR2PlayerCount').value = '';
+    document.getElementById('recreatePoolSize').value = '4';
+    document.getElementById('recreatePoolPreview1').innerHTML = '';
+    document.getElementById('recreatePoolPreview2').innerHTML = '';
+    
+    // Attach input listeners
+    const playerInput = document.getElementById('recreateR2PlayerCount');
+    playerInput.oninput = function() {
+      const count = parseInt(this.value) || 0;
+      const poolSize = parseInt(document.getElementById('recreatePoolSize').value) || 4;
+      if (count >= 4) {
+        const numPools = Math.ceil(count / poolSize);
+        document.getElementById('recreatePoolPreview1').innerHTML = `✓ ${count} players selected`;
+        document.getElementById('recreatePoolPreview2').innerHTML = `✓ Creates ${numPools} pools`;
+      } else if (count > 0) {
+        document.getElementById('recreatePoolPreview1').innerHTML = `<span style="color: #dc2626;">Minimum 4 players</span>`;
+      } else {
+        document.getElementById('recreatePoolPreview1').innerHTML = '';
+      }
+    };
+    
+    const poolSizeInput = document.getElementById('recreatePoolSize');
+    poolSizeInput.oninput = function() {
+      const playerCount = parseInt(document.getElementById('recreateR2PlayerCount').value) || 0;
+      const poolSize = parseInt(this.value) || 2;
+      if (playerCount >= 4 && poolSize >= 2) {
+        const numPools = Math.ceil(playerCount / poolSize);
+        document.getElementById('recreatePoolPreview2').innerHTML = `✓ Creates ${numPools} pools of ${poolSize} players`;
+      }
+    };
+    
+    document.getElementById('recreateR2Overlay').style.display = 'block';
+    document.getElementById('recreateR2Modal').style.display = 'block';
+    playerInput.focus();
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+function closeRecreateR2Modal() {
+  document.getElementById('recreateR2Overlay').style.display = 'none';
+  document.getElementById('recreateR2Modal').style.display = 'none';
+}
+
+async function submitRecreateR2Pools() {
+  try {
+    const playerCount = parseInt(document.getElementById('recreateR2PlayerCount').value);
+    const poolSize = parseInt(document.getElementById('recreatePoolSize').value);
+    
+    if (!playerCount || playerCount < 4) {
+      alert('Please enter at least 4 players');
+      return;
+    }
+    
+    if (!poolSize || poolSize < 2) {
+      alert('Please enter at least 2 players per pool');
+      return;
+    }
+    
+    if (playerCount > currentPlayers.length) {
+      alert(`Cannot exceed ${currentPlayers.length} total players`);
+      return;
+    }
+    
+    if (poolSize > playerCount) {
+      alert(`Cannot exceed ${playerCount} total players`);
+      return;
+    }
+    
+    closeRecreateR2Modal();
+    await generateR2PoolsWithCount(playerCount, poolSize);
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
 async function saveR2PoolChanges() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
@@ -1621,6 +1737,7 @@ async function loadR2Data() {
     // Store R2 pools for editing
     currentR2Pools = r2poolsJson;
     document.getElementById('editR2PoolsBtn').style.display = 'inline-block';
+    document.getElementById('recreateR2PoolsBtn').style.display = 'inline-block';
     
     const r2pools = JSON.parse(r2poolsJson);
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
