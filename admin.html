@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <meta charset="UTF-8"/>
@@ -56,7 +55,6 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 
   <!-- Tournament Selection -->
-
   <div id="tourSelectScreen">
     <div class="card">
       <div class="card-title">Select Tournament or Create New</div>
@@ -68,123 +66,118 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 
   <!-- Tournament Tabs Screen -->
-
   <div id="tourTabsScreen" class="hidden">
     <div style="margin-bottom: 1rem;">
       <button class="btn" onclick="backToTourList()">← Back</button>
     </div>
 
-```
-<div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
-  <button type="button" class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
-  <button type="button" class="tab-btn" id="rulesTabBtn" onclick="showTab('rules')" style="display: none;">Rules</button>
-  <button type="button" class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
-  <button type="button" class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
-  <button type="button" class="tab-btn" id="bracketTabBtn" onclick="showTab('bracket')" style="display: none;">Bracket</button>
-  <button type="button" class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
-  <button type="button" class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
-</div>
+    <div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
+      <button type="button" class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
+      <button type="button" class="tab-btn" id="rulesTabBtn" onclick="showTab('rules')" style="display: none;">Rules</button>
+      <button type="button" class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
+      <button type="button" class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
+      <button type="button" class="tab-btn" id="bracketTabBtn" onclick="showTab('bracket')" style="display: none;">Bracket</button>
+      <button type="button" class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
+      <button type="button" class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
+    </div>
 
-<!-- Live Rankings Tab -->
-<div id="liveRankingsTab" class="hidden">
-  <div class="card">
-    <div class="card-title">Live Rankings</div>
-    <table class="score-table">
-      <thead>
-        <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
-      </thead>
-      <tbody id="liveRankingsList"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Live Scoring Tab -->
-<div id="liveScoringTab" class="hidden">
-  <div class="card">
-    <div class="card-title">All Scores by Pool & Round</div>
-    <div id="liveScoringList"></div>
-  </div>
-</div>
-
-<!-- Bracket Tab -->
-<div id="bracketTab" class="hidden">
-  <div class="card">
-    <div class="card-title">Tournament Bracket & Standings</div>
-    <div id="bracketContent"></div>
-  </div>
-</div>
-
-<!-- Rules Tab -->
-<div id="rulesTab" class="hidden">
-  <div class="card">
-    <div class="card-title">Tournament Rules & Format</div>
-    <div id="rulesContent"></div>
-  </div>
-</div>
-
-<!-- Setup Tab -->
-<div id="setupTab">
-  <div class="card">
-    <div class="card-title">Tournament Details</div>
-    <div style="margin-bottom: 12px;">
-      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Tournament Type</label>
-      <div style="display: flex; gap: 8px;">
-        <button type="button" class="btn" id="kotcBtn" onclick="selectTourType('kotc')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">King of the Beach</button>
-        <button type="button" class="btn" id="regularBtn" onclick="selectTourType('regular')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">Regular Tournament</button>
+    <!-- Live Rankings Tab -->
+    <div id="liveRankingsTab" class="hidden">
+      <div class="card">
+        <div class="card-title">Live Rankings</div>
+        <table class="score-table">
+          <thead>
+            <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
+          </thead>
+          <tbody id="liveRankingsList"></tbody>
+        </table>
       </div>
-      <div id="tourTypeError" style="color: #dc2626; font-size: 11px; margin-top: 4px; display: none;">Please select a tournament type</div>
     </div>
-    <div style="margin-bottom: 12px;">
-      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Name</label>
-      <input type="text" id="tourName" placeholder="Tournament name"/>
-    </div>
-    <div style="margin-bottom: 12px;">
-      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Date/Time</label>
-      <input type="datetime-local" id="tourDate"/>
-    </div>
-    <div style="margin-bottom: 12px;">
-      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Add Players</label>
-      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-        <input type="text" id="playerInput" placeholder="Player name"/>
-        <button class="btn" onclick="addPlayer()">Add</button>
+
+    <!-- Live Scoring Tab -->
+    <div id="liveScoringTab" class="hidden">
+      <div class="card">
+        <div class="card-title">All Scores by Pool & Round</div>
+        <div id="liveScoringList"></div>
       </div>
-      <div class="plist" id="playerList"></div>
-      <div style="font-size: 12px; color: #888;" id="playerCount">0 players</div>
     </div>
-    <button class="btn primary" onclick="saveTournament()">Save Tournament</button>
-    <div id="setupErr"></div>
-  </div>
-</div>
 
-<!-- Round 1 Tab -->
-<div id="r1Tab" class="hidden">
-  <div class="card">
-    <div class="card-title">Round 1 - Live Scoring</div>
-    <button class="btn primary" id="genR1Btn" onclick="generateR1Pools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
-    <button class="btn" id="editPoolsBtn" onclick="editPoolSpecs()" style="margin-bottom: 1rem; margin-left: 0.5rem; display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit Pool Specs</button>
-    <div id="r1PoolsStatus"></div>
-    <div id="r1ScoresList"></div>
-    <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
-    <button class="btn primary" id="generateR2Btn" onclick="showBracketTypeModal()" style="margin-top: 1rem; display: none; background: #10b981; border-color: #10b981;">Generate Round 2 Format</button>
-  </div>
-</div>
+    <!-- Bracket Tab -->
+    <div id="bracketTab" class="hidden">
+      <div class="card">
+        <div class="card-title">Tournament Bracket & Standings</div>
+        <div id="bracketContent"></div>
+      </div>
+    </div>
 
-<!-- Round 2 Tab -->
-<div id="r2Tab" class="hidden">
-  <div class="card">
-    <div class="card-title">Round 2 - Live Scoring</div>
-    <div id="r2PoolsStatus"></div>
-    <div id="r2ScoresList"></div>
-    <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
-  </div>
-</div>
-```
+    <!-- Rules Tab -->
+    <div id="rulesTab" class="hidden">
+      <div class="card">
+        <div class="card-title">Tournament Rules & Format</div>
+        <div id="rulesContent"></div>
+      </div>
+    </div>
 
+    <!-- Setup Tab -->
+    <div id="setupTab">
+      <div class="card">
+        <div class="card-title">Tournament Details</div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Tournament Type</label>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn" id="kotcBtn" onclick="selectTourType('kotc')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">King of the Beach</button>
+            <button type="button" class="btn" id="regularBtn" onclick="selectTourType('regular')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">Regular Tournament</button>
+          </div>
+          <div id="tourTypeError" style="color: #dc2626; font-size: 11px; margin-top: 4px; display: none;">Please select a tournament type</div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Name</label>
+          <input type="text" id="tourName" placeholder="Tournament name"/>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Date/Time</label>
+          <input type="datetime-local" id="tourDate"/>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Add Players</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="playerInput" placeholder="Player name"/>
+            <button class="btn" onclick="addPlayer()">Add</button>
+          </div>
+          <div class="plist" id="playerList"></div>
+          <div style="font-size: 12px; color: #888;" id="playerCount">0 players</div>
+        </div>
+        <button class="btn primary" onclick="saveTournament()">Save Tournament</button>
+        <div id="setupErr"></div>
+      </div>
+    </div>
+
+    <!-- Round 1 Tab -->
+    <div id="r1Tab" class="hidden">
+      <div class="card">
+        <div class="card-title">Round 1 - Live Scoring</div>
+        <button class="btn primary" id="genR1Btn" onclick="generateR1Pools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
+        <button class="btn" id="editPoolsBtn" onclick="editPoolSpecs()" style="margin-bottom: 1rem; margin-left: 0.5rem; display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit Pool Specs</button>
+        <div id="r1PoolsStatus"></div>
+        <div id="r1ScoresList"></div>
+        <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
+        <button class="btn primary" id="generateR2Btn" onclick="showBracketTypeModal()" style="margin-top: 1rem; display: none; background: #10b981; border-color: #10b981;">Generate Round 2 Format</button>
+      </div>
+    </div>
+
+    <!-- Round 2 Tab -->
+    <div id="r2Tab" class="hidden">
+      <div class="card">
+        <div class="card-title">Round 2 - Live Scoring</div>
+        <div id="r2PoolsStatus"></div>
+        <div id="r2ScoresList"></div>
+        <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- Pool Specifications Modal -->
-
 <div class="overlay" id="poolSpecOverlay"></div>
 <div class="modal" id="poolSpecModal" style="max-width: 500px;">
   <button onclick="closePoolSpecModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
@@ -194,7 +187,6 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 </div>
 
 <!-- Pool Scoring Rules Modal -->
-
 <div class="overlay" id="scoringRulesOverlay"></div>
 <div class="modal" id="scoringRulesModal" style="max-width: 600px;">
   <button onclick="closeScoringRulesModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
@@ -204,12 +196,13 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 </div>
 
 <!-- Bracket Type Selection Modal -->
-
 <div class="overlay" id="bracketTypeOverlay"></div>
 
 <!-- Pool Player Count Overlay -->
-
 <div class="overlay" id="poolPlayerCountOverlay"></div>
+
+<!-- Pool Size Overlay -->
+<div class="overlay" id="poolSizeOverlay"></div>
 <div class="modal" id="bracketTypeModal" style="max-width: 500px;">
   <button onclick="closeBracketTypeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">Choose Tournament Format for Round 2</div>
@@ -226,7 +219,6 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 </div>
 
 <!-- Pool Player Count Modal -->
-
 <div class="modal" id="poolPlayerCountModal" style="max-width: 400px;">
   <button onclick="closePoolPlayerCountModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">How many top players for Round 2?</div>
@@ -236,15 +228,28 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
     <div style="font-size: 11px; color: #999; margin-top: 0.5rem;" id="poolPreview"></div>
   </div>
   <div style="display: flex; gap: 0.75rem;">
-    <button type="button" class="btn primary" onclick="submitR2PlayerCount()" style="flex: 1; background: #3b82f6; border-color: #3b82f6;">Generate Pools</button>
+    <button type="button" class="btn primary" onclick="submitR2PlayerCount()" style="flex: 1; background: #3b82f6; border-color: #3b82f6;">Next</button>
     <button type="button" class="btn" onclick="closePoolPlayerCountModal()" style="flex: 1;">Cancel</button>
   </div>
 </div>
 
+<!-- Pool Size Modal -->
+<div class="modal" id="poolSizeModal" style="max-width: 400px;">
+  <button onclick="closePoolSizeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+  <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">How many players per pool?</div>
+  <div style="margin-bottom: 1.5rem;">
+    <label style="display: block; font-size: 13px; margin-bottom: 0.5rem; color: #666;">Players Per Pool</label>
+    <input type="number" id="poolSize" min="2" max="999" placeholder="Enter number (e.g., 4 or 5)" style="width: 100%; padding: 0.75rem; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 14px;">
+    <div style="font-size: 11px; color: #999; margin-top: 0.5rem;" id="poolSizePreview"></div>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <button type="button" class="btn primary" onclick="submitPoolSize()" style="flex: 1; background: #3b82f6; border-color: #3b82f6;">Generate Pools</button>
+    <button type="button" class="btn" onclick="closePoolSizeModal()" style="flex: 1;">Cancel</button>
+  </div>
+</div>
+
 <!-- Firebase Scripts -->
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
@@ -1127,6 +1132,8 @@ async function finalizeR1() {
   }
 }
 
+let r2PlayerCountCache = 0; // Store player count for second modal
+
 function showPoolPlayerCountModal() {
   try {
     if (!currentPlayers || currentPlayers.length === 0) {
@@ -1144,9 +1151,7 @@ function showPoolPlayerCountModal() {
     input.oninput = function() {
       const count = parseInt(this.value) || 0;
       if (count >= 4) {
-        const numPools = Math.ceil(count / 4);
-        const playersPerPool = Math.ceil(count / numPools);
-        document.getElementById('poolPreview').innerHTML = `✓ ${numPools} pools of ~${playersPerPool} players`;
+        document.getElementById('poolPreview').innerHTML = `✓ ${count} players selected`;
       } else if (count > 0) {
         document.getElementById('poolPreview').innerHTML = `<span style="color: #dc2626;">Minimum 4 players</span>`;
       } else {
@@ -1166,20 +1171,37 @@ function closePoolPlayerCountModal() {
   document.getElementById('poolPlayerCountModal').style.display = 'none';
 }
 
-// Update preview as user types (fallback)
-if (document.getElementById('r2PlayerCount')) {
-  document.getElementById('r2PlayerCount').addEventListener('input', function(e) {
-    const count = parseInt(this.value) || 0;
-    if (count >= 4) {
-      const numPools = Math.ceil(count / 4);
-      const playersPerPool = Math.ceil(count / numPools);
-      document.getElementById('poolPreview').innerHTML = `✓ ${numPools} pools of ~${playersPerPool} players`;
-    } else if (count > 0) {
-      document.getElementById('poolPreview').innerHTML = `<span style="color: #dc2626;">Minimum 4 players</span>`;
-    } else {
-      document.getElementById('poolPreview').innerHTML = '';
-    }
-  });
+function showPoolSizeModal() {
+  try {
+    document.getElementById('poolSize').value = '4';
+    document.getElementById('poolSizePreview').innerHTML = '';
+    document.getElementById('poolSizeOverlay').style.display = 'block';
+    document.getElementById('poolSizeModal').style.display = 'block';
+    
+    // Attach input listener
+    const input = document.getElementById('poolSize');
+    input.oninput = function() {
+      const poolSize = parseInt(this.value) || 0;
+      const numPools = Math.ceil(r2PlayerCountCache / poolSize);
+      if (poolSize >= 2 && poolSize <= r2PlayerCountCache) {
+        document.getElementById('poolSizePreview').innerHTML = `✓ ${numPools} pools of ${poolSize} players`;
+      } else if (poolSize > r2PlayerCountCache) {
+        document.getElementById('poolSizePreview').innerHTML = `<span style="color: #dc2626;">Cannot exceed ${r2PlayerCountCache} players</span>`;
+      } else if (poolSize > 0) {
+        document.getElementById('poolSizePreview').innerHTML = `<span style="color: #dc2626;">Minimum 2 players per pool</span>`;
+      }
+    };
+    
+    input.focus();
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+function closePoolSizeModal() {
+  document.getElementById('poolSizeOverlay').style.display = 'none';
+  document.getElementById('poolSizeModal').style.display = 'none';
 }
 
 async function submitR2PlayerCount() {
@@ -1196,14 +1218,37 @@ async function submitR2PlayerCount() {
       return;
     }
     
-    await generateR2PoolsWithCount(playerCount);
+    r2PlayerCountCache = playerCount;
+    closePoolPlayerCountModal();
+    showPoolSizeModal();
   } catch (e) {
     console.error('Error:', e);
     alert('Error: ' + e.message);
   }
 }
 
-async function generateR2PoolsWithCount(playerCount) {
+async function submitPoolSize() {
+  try {
+    const poolSize = parseInt(document.getElementById('poolSize').value);
+    
+    if (!poolSize || poolSize < 2) {
+      alert('Please enter at least 2 players per pool');
+      return;
+    }
+    
+    if (poolSize > r2PlayerCountCache) {
+      alert(`Cannot exceed ${r2PlayerCountCache} total players`);
+      return;
+    }
+    
+    await generateR2PoolsWithCount(r2PlayerCountCache, poolSize);
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+async function generateR2PoolsWithCount(playerCount, poolSize = 4) {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
     
@@ -1214,8 +1259,8 @@ async function generateR2PoolsWithCount(playerCount) {
     // Take top N players
     const topPlayers = ranked.slice(0, playerCount).map(p => p.name);
     
-    // Generate R2 pools using snake draft (1,3,5,7... in Pool A; 2,4,6,8... in Pool B; etc)
-    const numPools = Math.ceil(topPlayers.length / 4);
+    // Generate R2 pools using snake draft based on custom pool size
+    const numPools = Math.ceil(topPlayers.length / poolSize);
     const r2pools = [];
     
     for (let i = 0; i < numPools; i++) {
@@ -1235,7 +1280,8 @@ async function generateR2PoolsWithCount(playerCount) {
 
     closeBracketTypeModal();
     closePoolPlayerCountModal();
-    alert(`✓ Round 1 Finalized!\n✓ Round 2 Pools Created!\n\nTop ${playerCount} players\n${numPools} pools for Round 2`);
+    closePoolSizeModal();
+    alert(`✓ Round 1 Finalized!\n✓ Round 2 Pools Created!\n\nTop ${playerCount} players\n${numPools} pools of ${poolSize} players`);
     
     // Enable R2 tab and switch to it
     document.getElementById('r2TabBtn').style.display = 'block';
@@ -2348,6 +2394,5 @@ window.addEventListener('load', () => {
   }, 100);
 });
 </script>
-
 </body>
 </html>
