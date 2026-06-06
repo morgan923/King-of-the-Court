@@ -1438,9 +1438,123 @@ async function loadLiveRankings() {
   }
 }
 
+async function advanceBracketWinners() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    
+    if (!data.bracketStructureJson) return;
+    
+    const bracket = JSON.parse(data.bracketStructureJson);
+    if (bracket.type !== 'ncaa-pairs-separate') return;
+    
+    const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+    const scores = {};
+    scoresSnap.forEach(scoreDoc => {
+      scores[scoreDoc.id] = scoreDoc.data();
+    });
+    
+    // Auto-advance upper bracket winners
+    let upperR1Complete = true;
+    const upperWinners = [];
+    bracket.upper.round1.forEach((match, idx) => {
+      const gameId = `g${1000 + idx}`; // Bracket games use 1000+ offset
+      if (scores[gameId]) {
+        const score = scores[gameId];
+        if (score.s1 > score.s2) {
+          upperWinners.push({ team: 'team1', players: match.team1Players, seeds: match.team1Seeds });
+        } else {
+          upperWinners.push({ team: 'team2', players: match.team2Players, seeds: match.team2Seeds });
+        }
+      } else {
+        upperR1Complete = false;
+      }
+    });
+    
+    // Generate upper R2 if R1 complete and R2 empty
+    if (upperR1Complete && upperWinners.length === 4 && bracket.upper.round2.length === 0) {
+      bracket.upper.round2 = [
+        {
+          team1Players: upperWinners[0].players,
+          team1Seeds: upperWinners[0].seeds,
+          team2Players: upperWinners[3].players,
+          team2Seeds: upperWinners[3].seeds,
+          score1: null,
+          score2: null,
+          winner: null
+        },
+        {
+          team1Players: upperWinners[1].players,
+          team1Seeds: upperWinners[1].seeds,
+          team2Players: upperWinners[2].players,
+          team2Seeds: upperWinners[2].seeds,
+          score1: null,
+          score2: null,
+          winner: null
+        }
+      ];
+    }
+    
+    // Auto-advance lower bracket winners
+    let lowerR1Complete = bracket.lower.round1.length === 0 || false;
+    let lowerR1Winner = null;
+    
+    if (bracket.lower.round1.length > 0) {
+      const lowerR1 = bracket.lower.round1[0];
+      const lowerGameId = `g${1000 + 4 + 0}`; // After upper R1 matches
+      if (scores[lowerGameId]) {
+        const score = scores[lowerGameId];
+        if (score.s1 > score.s2) {
+          lowerR1Winner = { team: 'team1', players: lowerR1.team1Players, seeds: lowerR1.team1Seeds };
+        } else {
+          lowerR1Winner = { team: 'team2', players: lowerR1.team2Players, seeds: lowerR1.team2Seeds };
+        }
+        lowerR1Complete = true;
+      }
+    }
+    
+    // Generate lower R2 if R1 complete and R2 empty
+    if (lowerR1Complete && lowerR1Winner && bracket.lower.round2.length === 0 && bracket.byeTeams) {
+      bracket.lower.round2 = [
+        {
+          team1Players: bracket.byeTeams[0].players,
+          team1Seeds: bracket.byeTeams[0].seeds,
+          team2Players: lowerR1Winner.players,
+          team2Seeds: lowerR1Winner.seeds,
+          score1: null,
+          score2: null,
+          winner: null
+        },
+        {
+          team1Players: bracket.byeTeams[1].players,
+          team1Seeds: bracket.byeTeams[1].seeds,
+          team2Players: null,
+          team2Seeds: null,
+          score1: null,
+          score2: null,
+          winner: null
+        }
+      ];
+    }
+    
+    // Save updated bracket
+    await db.collection('tournaments').doc(currentTourId).update({
+      bracketStructureJson: JSON.stringify(bracket)
+    });
+    
+  } catch (e) {
+    console.error('Error advancing bracket:', e);
+  }
+}
+
 async function loadBracket() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
+    
+    // Advance winners first
+    await advanceBracketWinners();
     
     const doc = await db.collection('tournaments').doc(currentTourId).get();
     const data = doc.data();
@@ -1503,23 +1617,51 @@ async function loadBracket() {
         const createVisualBracket = (bracketData, title, color) => {
           const round1 = bracketData.round1 || [];
           const round2 = bracketData.round2 || [];
-          const finals = bracketData.finals;
+          let finals = bracketData.finals;
+          
+          // Auto-generate finals if R2 complete and finals empty
+          if (round2.length > 0 && !finals) {
+            const r2Winners = [];
+            round2.forEach(match => {
+              if (match.score1 !== null && match.score2 !== null) {
+                if (match.score1 > match.score2) {
+                  r2Winners.push({ players: match.team1Players, seeds: match.team1Seeds });
+                } else {
+                  r2Winners.push({ players: match.team2Players, seeds: match.team2Seeds });
+                }
+              }
+            });
+            
+            if (r2Winners.length === 2) {
+              finals = {
+                team1Players: r2Winners[0].players,
+                team1Seeds: r2Winners[0].seeds,
+                team2Players: r2Winners[1].players,
+                team2Seeds: r2Winners[1].seeds,
+                score1: null,
+                score2: null,
+                winner: null
+              };
+            }
+          }
           
           let bracketHtml = `<div>
             <div style="font-weight: 600; font-size: 16px; margin-bottom: 2rem; padding: 0.75rem; background: ${color === 'upper' ? '#dbeafe' : '#fee2e2'}; border-radius: 8px; text-align: center; border: 2px solid ${color === 'upper' ? '#0891b2' : '#dc2626'};">${title}</div>
             <div style="display: flex; gap: 3rem; min-width: 1000px; position: relative;">`;
           
           // Round 1
-          bracketHtml += '<div style="flex: 0 0 200px;"><div style="font-size: 11px; color: #666; margin-bottom: 1rem; font-weight: 600;">ROUND 1</div>';
+          bracketHtml += '<div style="flex: 0 0 220px;"><div style="font-size: 11px; color: #666; margin-bottom: 1rem; font-weight: 600;">ROUND 1</div>';
           round1.forEach((match, idx) => {
             const borderColor = color === 'upper' ? '#0891b2' : '#dc2626';
             bracketHtml += `
-              <div style="margin-bottom: 2rem; font-size: 11px;">
+              <div style="margin-bottom: 2rem; font-size: 10px;">
                 <div style="padding: 6px; background: #fff; border: 1px solid ${borderColor}; border-radius: 4px; margin-bottom: 2px;">
                   <div style="font-weight: 600;">${match.team1Players[0]}</div>
+                  <div style="font-weight: 600;">${match.team1Players[1]}</div>
                 </div>
                 <div style="padding: 6px; background: #fff; border: 1px solid ${borderColor}; border-radius: 4px;">
                   <div style="font-weight: 600;">${match.team2Players[0]}</div>
+                  <div style="font-weight: 600;">${match.team2Players[1]}</div>
                 </div>
                 <div style="margin-top: 4px; font-size: 9px; color: #999;">
                   ${match.score1 !== null && match.score2 !== null ? `${match.score1} - ${match.score2}` : '--'}
@@ -1531,16 +1673,18 @@ async function loadBracket() {
           
           // Round 2
           if (round2.length > 0) {
-            bracketHtml += '<div style="flex: 0 0 200px;"><div style="font-size: 11px; color: #666; margin-bottom: 1rem; font-weight: 600;">ROUND 2</div>';
+            bracketHtml += '<div style="flex: 0 0 220px;"><div style="font-size: 11px; color: #666; margin-bottom: 1rem; font-weight: 600;">ROUND 2</div>';
             round2.forEach((match, idx) => {
               const borderColor = color === 'upper' ? '#0891b2' : '#dc2626';
               bracketHtml += `
-                <div style="margin-bottom: 2rem; font-size: 11px;">
+                <div style="margin-bottom: 2rem; font-size: 10px;">
                   <div style="padding: 6px; background: #fff; border: 1px solid ${borderColor}; border-radius: 4px; margin-bottom: 2px;">
                     <div style="font-weight: 600;">${match.team1Players ? match.team1Players[0] : '-- TBD --'}</div>
+                    <div style="font-weight: 600;">${match.team1Players ? match.team1Players[1] : ''}</div>
                   </div>
                   <div style="padding: 6px; background: #fff; border: 1px solid ${borderColor}; border-radius: 4px;">
                     <div style="font-weight: 600;">${match.team2Players ? match.team2Players[0] : '-- TBD --'}</div>
+                    <div style="font-weight: 600;">${match.team2Players ? match.team2Players[1] : ''}</div>
                   </div>
                   <div style="margin-top: 4px; font-size: 9px; color: #999;">
                     ${match.score1 !== null && match.score2 !== null ? `${match.score1} - ${match.score2}` : '--'}
@@ -1553,13 +1697,15 @@ async function loadBracket() {
           
           // Finals
           if (finals) {
-            bracketHtml += `<div style="flex: 0 0 200px;"><div style="font-size: 11px; color: #666; margin-bottom: 1rem; font-weight: 600;">FINALS</div>
-              <div style="font-size: 11px;">
+            bracketHtml += `<div style="flex: 0 0 220px;"><div style="font-size: 11px; color: #666; margin-bottom: 1rem; font-weight: 600;">FINALS</div>
+              <div style="font-size: 10px;">
                 <div style="padding: 6px; background: #fff; border: 2px solid ${color === 'upper' ? '#0891b2' : '#dc2626'}; border-radius: 4px; margin-bottom: 2px;">
                   <div style="font-weight: 600;">${finals.team1Players ? finals.team1Players[0] : '-- TBD --'}</div>
+                  <div style="font-weight: 600;">${finals.team1Players ? finals.team1Players[1] : ''}</div>
                 </div>
                 <div style="padding: 6px; background: #fff; border: 2px solid ${color === 'upper' ? '#0891b2' : '#dc2626'}; border-radius: 4px;">
                   <div style="font-weight: 600;">${finals.team2Players ? finals.team2Players[0] : '-- TBD --'}</div>
+                  <div style="font-weight: 600;">${finals.team2Players ? finals.team2Players[1] : ''}</div>
                 </div>
                 <div style="margin-top: 4px; font-size: 9px; color: #999;">
                   ${finals.score1 !== null && finals.score2 !== null ? `${finals.score1} - ${finals.score2}` : '--'}
