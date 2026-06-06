@@ -1129,28 +1129,32 @@ async function finalizeR1() {
 
 function showPoolPlayerCountModal() {
   try {
-    // Get total players
     if (!currentPlayers || currentPlayers.length === 0) {
       alert('No players found');
       return;
     }
     
-    const totalPlayers = currentPlayers.length;
-    const maxPlayersR2 = Math.floor(totalPlayers * 0.75); // Max 75% advance
-    
-    // Generate options: 4, 6, 8, 10, 12, etc.
-    let optionsHtml = '';
-    for (let i = 4; i <= maxPlayersR2; i += 2) {
-      optionsHtml += `
-        <button type="button" class="btn primary" onclick="generateR2PoolsWithCount(${i})" style="padding: 0.75rem; background: #3b82f6; border-color: #3b82f6; text-align: center;">
-          <strong>${i} Players</strong> (${Math.ceil(i / 4)} pools of ~${Math.ceil(i / Math.ceil(i / 4))})
-        </button>
-      `;
-    }
-    
-    document.getElementById('poolCountOptions').innerHTML = optionsHtml;
+    document.getElementById('r2PlayerCount').value = '';
+    document.getElementById('poolPreview').innerHTML = '';
     document.getElementById('poolPlayerCountOverlay').style.display = 'block';
     document.getElementById('poolPlayerCountModal').style.display = 'block';
+    
+    // Attach input listener
+    const input = document.getElementById('r2PlayerCount');
+    input.oninput = function() {
+      const count = parseInt(this.value) || 0;
+      if (count >= 4) {
+        const numPools = Math.ceil(count / 4);
+        const playersPerPool = Math.ceil(count / numPools);
+        document.getElementById('poolPreview').innerHTML = `✓ ${numPools} pools of ~${playersPerPool} players`;
+      } else if (count > 0) {
+        document.getElementById('poolPreview').innerHTML = `<span style="color: #dc2626;">Minimum 4 players</span>`;
+      } else {
+        document.getElementById('poolPreview').innerHTML = '';
+      }
+    };
+    
+    input.focus();
   } catch (e) {
     console.error('Error:', e);
     alert('Error: ' + e.message);
@@ -1160,6 +1164,43 @@ function showPoolPlayerCountModal() {
 function closePoolPlayerCountModal() {
   document.getElementById('poolPlayerCountOverlay').style.display = 'none';
   document.getElementById('poolPlayerCountModal').style.display = 'none';
+}
+
+// Update preview as user types (fallback)
+if (document.getElementById('r2PlayerCount')) {
+  document.getElementById('r2PlayerCount').addEventListener('input', function(e) {
+    const count = parseInt(this.value) || 0;
+    if (count >= 4) {
+      const numPools = Math.ceil(count / 4);
+      const playersPerPool = Math.ceil(count / numPools);
+      document.getElementById('poolPreview').innerHTML = `✓ ${numPools} pools of ~${playersPerPool} players`;
+    } else if (count > 0) {
+      document.getElementById('poolPreview').innerHTML = `<span style="color: #dc2626;">Minimum 4 players</span>`;
+    } else {
+      document.getElementById('poolPreview').innerHTML = '';
+    }
+  });
+}
+
+async function submitR2PlayerCount() {
+  try {
+    const playerCount = parseInt(document.getElementById('r2PlayerCount').value);
+    
+    if (!playerCount || playerCount < 4) {
+      alert('Please enter at least 4 players');
+      return;
+    }
+    
+    if (playerCount > currentPlayers.length) {
+      alert(`Cannot exceed ${currentPlayers.length} total players`);
+      return;
+    }
+    
+    await generateR2PoolsWithCount(playerCount);
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
 }
 
 async function generateR2PoolsWithCount(playerCount) {
