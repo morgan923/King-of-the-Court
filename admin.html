@@ -1456,16 +1456,22 @@ async function advanceBracketWinners() {
       scores[scoreDoc.id] = scoreDoc.data();
     });
     
-    // Auto-advance upper bracket winners
+    // Update upper bracket R1 with scores and auto-advance winners
     let upperR1Complete = true;
     const upperWinners = [];
     bracket.upper.round1.forEach((match, idx) => {
-      const gameId = `g${1000 + idx}`; // Bracket games use 1000+ offset
+      const gameId = `g${1000 + idx}`;
       if (scores[gameId]) {
         const score = scores[gameId];
+        // Update match with scores
+        match.score1 = score.s1;
+        match.score2 = score.s2;
+        // Determine winner
         if (score.s1 > score.s2) {
+          match.winner = match.team1Players.join(' & ');
           upperWinners.push({ team: 'team1', players: match.team1Players, seeds: match.team1Seeds });
         } else {
+          match.winner = match.team2Players.join(' & ');
           upperWinners.push({ team: 'team2', players: match.team2Players, seeds: match.team2Seeds });
         }
       } else {
@@ -1497,18 +1503,39 @@ async function advanceBracketWinners() {
       ];
     }
     
-    // Auto-advance lower bracket winners
+    // Update upper R2 with scores
+    if (bracket.upper.round2.length > 0) {
+      bracket.upper.round2.forEach((match, idx) => {
+        const gameId = `g${1004 + idx}`;
+        if (scores[gameId]) {
+          const score = scores[gameId];
+          match.score1 = score.s1;
+          match.score2 = score.s2;
+          if (score.s1 > score.s2) {
+            match.winner = match.team1Players.join(' & ');
+          } else {
+            match.winner = match.team2Players.join(' & ');
+          }
+        }
+      });
+    }
+    
+    // Update lower bracket R1 with scores and get winner
     let lowerR1Complete = bracket.lower.round1.length === 0 || false;
     let lowerR1Winner = null;
     
     if (bracket.lower.round1.length > 0) {
       const lowerR1 = bracket.lower.round1[0];
-      const lowerGameId = `g${1000 + 4 + 0}`; // After upper R1 matches
+      const lowerGameId = `g${1006}`;
       if (scores[lowerGameId]) {
         const score = scores[lowerGameId];
+        lowerR1.score1 = score.s1;
+        lowerR1.score2 = score.s2;
         if (score.s1 > score.s2) {
+          lowerR1.winner = lowerR1.team1Players.join(' & ');
           lowerR1Winner = { team: 'team1', players: lowerR1.team1Players, seeds: lowerR1.team1Seeds };
         } else {
+          lowerR1.winner = lowerR1.team2Players.join(' & ');
           lowerR1Winner = { team: 'team2', players: lowerR1.team2Players, seeds: lowerR1.team2Seeds };
         }
         lowerR1Complete = true;
@@ -1537,6 +1564,26 @@ async function advanceBracketWinners() {
           winner: null
         }
       ];
+    }
+    
+    // Update lower R2 with scores
+    if (bracket.lower.round2.length > 0) {
+      bracket.lower.round2.forEach((match, idx) => {
+        // Skip bye matches (where team2 is null)
+        if (!match.team2Players) return;
+        
+        const gameId = `g${1007 + idx}`;
+        if (scores[gameId]) {
+          const score = scores[gameId];
+          match.score1 = score.s1;
+          match.score2 = score.s2;
+          if (score.s1 > score.s2) {
+            match.winner = match.team1Players.join(' & ');
+          } else {
+            match.winner = match.team2Players.join(' & ');
+          }
+        }
+      });
     }
     
     // Save updated bracket
