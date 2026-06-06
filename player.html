@@ -394,6 +394,13 @@ async function loadGamesByRound(round) {
     
     const doc = await db.collection('tournaments').doc(currentTourId).get();
     const data = doc.data();
+    
+    // Check if this is a bracket tournament
+    if (data.bracketStructureJson && !data.r2poolsJson) {
+      return loadBracketGames(round);
+    }
+    
+    // Otherwise, load pool play games
     const poolsJson = round === 'r1' ? data.poolsJson : data.r2poolsJson;
     
     if (!poolsJson) {
