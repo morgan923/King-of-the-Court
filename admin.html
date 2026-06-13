@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta charset="UTF-8"/>
@@ -55,6 +56,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 
   <!-- Tournament Selection -->
+
   <div id="tourSelectScreen">
     <div class="card">
       <div class="card-title">Select Tournament or Create New</div>
@@ -66,132 +68,137 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   </div>
 
   <!-- Tournament Tabs Screen -->
+
   <div id="tourTabsScreen" class="hidden">
     <div style="margin-bottom: 1rem;">
       <button class="btn" onclick="backToTourList()">← Back</button>
     </div>
 
-    <div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
-      <button type="button" class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
-      <button type="button" class="tab-btn" id="rulesTabBtn" onclick="showTab('rules')" style="display: none;">Rules</button>
-      <button type="button" class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
-      <button type="button" class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
-      <button type="button" class="tab-btn" id="bracketTabBtn" onclick="showTab('bracket')" style="display: none;">Bracket</button>
-      <button type="button" class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
-      <button type="button" class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
-      <button type="button" class="tab-btn" id="r2RankingsTabBtn" onclick="showTab('r2rankings')" style="display: none;">Round 2 Rankings</button>
-    </div>
+```
+<div style="display: flex; gap: 8px; margin-bottom: 1rem; border-bottom: 2px solid #e5e4e0; padding-bottom: 1rem;">
+  <button type="button" class="tab-btn active" onclick="showTab('setup')">Initial Setup</button>
+  <button type="button" class="tab-btn" id="rulesTabBtn" onclick="showTab('rules')" style="display: none;">Rules</button>
+  <button type="button" class="tab-btn" id="liveRankingsTabBtn" onclick="showTab('liveRankings')" style="display: none;">Live Rankings</button>
+  <button type="button" class="tab-btn" id="liveScoringTabBtn" onclick="showTab('liveScoring')" style="display: none;">Live Scoring</button>
+  <button type="button" class="tab-btn" id="bracketTabBtn" onclick="showTab('bracket')" style="display: none;">Bracket</button>
+  <button type="button" class="tab-btn" id="r1TabBtn" onclick="showTab('r1')" style="display: none;">Round 1</button>
+  <button type="button" class="tab-btn" id="r2TabBtn" onclick="showTab('r2')" style="display: none;">Round 2</button>
+  <button type="button" class="tab-btn" id="r2RankingsTabBtn" onclick="showTab('r2rankings')" style="display: none;">Round 2 Rankings</button>
+</div>
 
-    <!-- Live Rankings Tab -->
-    <div id="liveRankingsTab" class="hidden">
-      <div class="card">
-        <div class="card-title">Live Rankings</div>
-        <table class="score-table">
-          <thead>
-            <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
-          </thead>
-          <tbody id="liveRankingsList"></tbody>
-        </table>
-      </div>
-    </div>
+<!-- Live Rankings Tab -->
+<div id="liveRankingsTab" class="hidden">
+  <div class="card">
+    <div class="card-title">Live Rankings</div>
+    <table class="score-table">
+      <thead>
+        <tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr>
+      </thead>
+      <tbody id="liveRankingsList"></tbody>
+    </table>
+  </div>
+</div>
 
-    <!-- Live Scoring Tab -->
-    <div id="liveScoringTab" class="hidden">
-      <div class="card">
-        <div class="card-title">All Scores by Pool & Round</div>
-        <div id="liveScoringList"></div>
-      </div>
-    </div>
+<!-- Live Scoring Tab -->
+<div id="liveScoringTab" class="hidden">
+  <div class="card">
+    <div class="card-title">All Scores by Pool & Round</div>
+    <div id="liveScoringList"></div>
+  </div>
+</div>
 
-    <!-- Bracket Tab -->
-    <div id="bracketTab" class="hidden">
-      <div class="card">
-        <div class="card-title">Tournament Bracket & Standings</div>
-        <div id="bracketContent"></div>
-      </div>
-    </div>
+<!-- Bracket Tab -->
+<div id="bracketTab" class="hidden">
+  <div class="card">
+    <div class="card-title">Tournament Bracket & Standings</div>
+    <div id="bracketContent"></div>
+  </div>
+</div>
 
-    <!-- Rules Tab -->
-    <div id="rulesTab" class="hidden">
-      <div class="card">
-        <div class="card-title">Tournament Rules & Format</div>
-        <div id="rulesContent"></div>
-      </div>
-    </div>
+<!-- Rules Tab -->
+<div id="rulesTab" class="hidden">
+  <div class="card">
+    <div class="card-title">Tournament Rules & Format</div>
+    <div id="rulesContent"></div>
+  </div>
+</div>
 
-    <!-- Setup Tab -->
-    <div id="setupTab">
-      <div class="card">
-        <div class="card-title">Tournament Details</div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Tournament Type</label>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn" id="kotcBtn" onclick="selectTourType('kotc')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">King of the Beach</button>
-            <button type="button" class="btn" id="regularBtn" onclick="selectTourType('regular')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">Regular Tournament</button>
-          </div>
-          <div id="tourTypeError" style="color: #dc2626; font-size: 11px; margin-top: 4px; display: none;">Please select a tournament type</div>
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Name</label>
-          <input type="text" id="tourName" placeholder="Tournament name"/>
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Date/Time</label>
-          <input type="datetime-local" id="tourDate"/>
-        </div>
-        <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Add Players</label>
-          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-            <input type="text" id="playerInput" placeholder="Player name"/>
-            <button class="btn" onclick="addPlayer()">Add</button>
-          </div>
-          <div class="plist" id="playerList"></div>
-          <div style="font-size: 12px; color: #888;" id="playerCount">0 players</div>
-        </div>
-        <button class="btn primary" onclick="saveTournament()">Save Tournament</button>
-        <div id="setupErr"></div>
+<!-- Setup Tab -->
+<div id="setupTab">
+  <div class="card">
+    <div class="card-title">Tournament Details</div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Tournament Type</label>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn" id="kotcBtn" onclick="selectTourType('kotc')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">King of the Beach</button>
+        <button type="button" class="btn" id="regularBtn" onclick="selectTourType('regular')" style="flex: 1; padding: 12px; border: 2px solid #d5d4d0;">Regular Tournament</button>
       </div>
+      <div id="tourTypeError" style="color: #dc2626; font-size: 11px; margin-top: 4px; display: none;">Please select a tournament type</div>
     </div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Name</label>
+      <input type="text" id="tourName" placeholder="Tournament name"/>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Date/Time</label>
+      <input type="datetime-local" id="tourDate"/>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <label style="display: block; font-size: 12px; color: #666; margin-bottom: 4px;">Add Players</label>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <input type="text" id="playerInput" placeholder="Player name"/>
+        <button class="btn" onclick="addPlayer()">Add</button>
+      </div>
+      <div class="plist" id="playerList"></div>
+      <div style="font-size: 12px; color: #888;" id="playerCount">0 players</div>
+    </div>
+    <button class="btn primary" onclick="saveTournament()">Save Tournament</button>
+    <div id="setupErr"></div>
+  </div>
+</div>
 
-    <!-- Round 1 Tab -->
-    <div id="r1Tab" class="hidden">
-      <div class="card">
-        <div class="card-title">Round 1 - Live Scoring</div>
-        <button class="btn primary" id="genR1Btn" onclick="generateR1Pools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
-        <button class="btn" id="editPoolsBtn" onclick="editPoolSpecs()" style="margin-bottom: 1rem; margin-left: 0.5rem; display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit Pool Specs</button>
-        <div id="r1PoolsStatus"></div>
-        <div id="r1ScoresList"></div>
-        <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
-        <button class="btn primary" id="generateR2Btn" onclick="showBracketTypeModal()" style="margin-top: 1rem; display: none; background: #10b981; border-color: #10b981;">Generate Round 2 Format</button>
-      </div>
-    </div>
+<!-- Round 1 Tab -->
+<div id="r1Tab" class="hidden">
+  <div class="card">
+    <div class="card-title">Round 1 - Live Scoring</div>
+    <button class="btn primary" id="genR1Btn" onclick="generateR1Pools()" style="margin-bottom: 1rem;">Generate Round 1 Pools</button>
+    <button class="btn" id="editPoolsBtn" onclick="editPoolSpecs()" style="margin-bottom: 1rem; margin-left: 0.5rem; display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit Pool Specs</button>
+    <div id="r1PoolsStatus"></div>
+    <div id="r1ScoresList"></div>
+    <button class="btn primary" id="finalizeR1Btn" onclick="finalizeR1()" style="margin-top: 1rem; display: none;">Finalize Round 1</button>
+    <button class="btn primary" id="generateR2Btn" onclick="showBracketTypeModal()" style="margin-top: 1rem; display: none; background: #10b981; border-color: #10b981;">Generate Round 2 Format</button>
+  </div>
+</div>
 
-    <!-- Round 2 Rankings Tab -->
-    <div id="r2rankingsTab" class="hidden">
-      <div class="card">
-        <div class="card-title">Round 2 - Rankings (R1 Stats)</div>
-        <div id="r2RankingsTableContent"></div>
-      </div>
+<!-- Round 2 Rankings Tab -->
+<div id="r2rankingsTab" class="hidden">
+  <div class="card">
+    <div class="card-title">Round 2 - Rankings (R1 Stats)</div>
+    <div id="r2RankingsTableContent"></div>
+  </div>
+</div>
+  <div class="card">
+    <div class="card-title">Round 2 - Rankings & Scoring</div>
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+      <button class="tab-btn" onclick="playerShowR2Tab('rankings')" style="background: #3b82f6; color: #fff; border-color: #3b82f6;">Rankings</button>
+      <button class="tab-btn" onclick="playerShowR2Tab('pools')" style="background: #fff; color: #000; border-color: #d5d4d0;">Pools</button>
+      <button class="tab-btn" id="editR2PoolsBtn" onclick="editR2Pools()" style="display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit R2 Pools</button>
+      <button class="tab-btn" id="recreateR2PoolsBtn" onclick="showRecreateR2Modal()" style="display: none; background: #8b5cf6; color: #fff; border-color: #8b5cf6;">Recreate R2 Pools</button>
     </div>
-      <div class="card">
-        <div class="card-title">Round 2 - Rankings & Scoring</div>
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
-          <button class="tab-btn" onclick="playerShowR2Tab('rankings')" style="background: #3b82f6; color: #fff; border-color: #3b82f6;">Rankings</button>
-          <button class="tab-btn" onclick="playerShowR2Tab('pools')" style="background: #fff; color: #000; border-color: #d5d4d0;">Pools</button>
-          <button class="tab-btn" id="editR2PoolsBtn" onclick="editR2Pools()" style="display: none; background: #f59e0b; color: #fff; border-color: #f59e0b;">Edit R2 Pools</button>
-          <button class="tab-btn" id="recreateR2PoolsBtn" onclick="showRecreateR2Modal()" style="display: none; background: #8b5cf6; color: #fff; border-color: #8b5cf6;">Recreate R2 Pools</button>
-        </div>
-        
-        <div id="r2RankingsContent"></div>
-        <div id="r2PoolsContent"></div>
-        
-        <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
-      </div>
-    </div>
+    
+    <div id="r2RankingsContent"></div>
+    <div id="r2PoolsContent"></div>
+    
+    <button class="btn primary" id="finalizeR2Btn" onclick="finalizeR2()" style="margin-top: 1rem; display: none;">Finalize Round 2</button>
+  </div>
+</div>
+```
+
   </div>
 </div>
 
 <!-- Pool Specifications Modal -->
+
 <div class="overlay" id="poolSpecOverlay"></div>
 <div class="modal" id="poolSpecModal" style="max-width: 500px;">
   <button onclick="closePoolSpecModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
@@ -201,6 +208,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 </div>
 
 <!-- Pool Scoring Rules Modal -->
+
 <div class="overlay" id="scoringRulesOverlay"></div>
 <div class="modal" id="scoringRulesModal" style="max-width: 600px;">
   <button onclick="closeScoringRulesModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
@@ -210,31 +218,35 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 </div>
 
 <!-- Bracket Type Selection Modal -->
+
 <div class="overlay" id="bracketTypeOverlay"></div>
 
 <!-- Pool Player Count Overlay -->
+
 <div class="overlay" id="poolPlayerCountOverlay"></div>
 
 <!-- Pool Size Overlay -->
+
 <div class="overlay" id="poolSizeOverlay"></div>
 
 <!-- Recreate R2 Pools Modal -->
+
 <div class="modal" id="recreateR2Modal" style="max-width: 600px;">
   <button onclick="closeRecreateR2Modal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">Recreate Round 2 Pools</div>
-  
+
   <div style="margin-bottom: 1.5rem;">
     <label style="display: block; font-size: 13px; margin-bottom: 0.5rem; color: #666;">How many top players for Round 2?</label>
     <input type="number" id="recreateR2PlayerCount" min="4" max="999" placeholder="Enter number" style="width: 100%; padding: 0.75rem; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 14px; margin-bottom: 0.5rem;">
     <div style="font-size: 11px; color: #999;" id="recreatePoolPreview1"></div>
   </div>
-  
+
   <div style="margin-bottom: 1.5rem;">
     <label style="display: block; font-size: 13px; margin-bottom: 0.5rem; color: #666;">How many players per pool?</label>
     <input type="number" id="recreatePoolSize" min="2" max="999" value="4" placeholder="Enter number" style="width: 100%; padding: 0.75rem; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 14px; margin-bottom: 0.5rem;">
     <div style="font-size: 11px; color: #999;" id="recreatePoolPreview2"></div>
   </div>
-  
+
   <div style="display: flex; gap: 0.75rem;">
     <button type="button" class="btn primary" onclick="submitRecreateR2Pools()" style="flex: 1; background: #8b5cf6; border-color: #8b5cf6;">Create Pools</button>
     <button type="button" class="btn" onclick="closeRecreateR2Modal()" style="flex: 1;">Cancel</button>
@@ -242,6 +254,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 </div>
 
 <!-- Recreate R2 Overlay -->
+
 <div class="overlay" id="recreateR2Overlay"></div>
 <div class="modal" id="bracketTypeModal" style="max-width: 500px;">
   <button onclick="closeBracketTypeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
@@ -259,6 +272,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 </div>
 
 <!-- Pool Player Count Modal -->
+
 <div class="modal" id="poolPlayerCountModal" style="max-width: 400px;">
   <button onclick="closePoolPlayerCountModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">How many top players for Round 2?</div>
@@ -274,6 +288,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 </div>
 
 <!-- Pool Size Modal -->
+
 <div class="modal" id="poolSizeModal" style="max-width: 400px;">
   <button onclick="closePoolSizeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">How many players per pool?</div>
@@ -289,7 +304,9 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 </div>
 
 <!-- Firebase Scripts -->
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
@@ -1858,46 +1875,62 @@ async function generateR2Pools() {
   }
 }
 
-function loadR2RankingsTable() {
+async function loadR2RankingsTable() {
   try {
-    if (!firebaseReady || !db || !currentTourId) {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    
+    if (!data.r2poolsJson) {
+      document.getElementById('r2RankingsTableContent').innerHTML = '<p style="color: #aaa;">Round 2 not yet generated</p>';
       return;
     }
     
-    db.collection('tournaments').doc(currentTourId).get().then(function(doc) {
-      const data = doc.data();
-      
-      if (!data.r2poolsJson) {
-        document.getElementById('r2RankingsTableContent').innerHTML = '<p style="color: #aaa;">Round 2 not yet generated</p>';
-        return;
-      }
-      
-      const r2pools = JSON.parse(data.r2poolsJson);
-      const r1rankings = JSON.parse(data.r1RankingsJson);
-      
-      const r2Players = new Set();
-      r2pools.forEach(pool => {
-        pool.forEach(player => {
-          r2Players.add(player);
-        });
+    const r2pools = JSON.parse(data.r2poolsJson);
+    const r1rankings = JSON.parse(data.r1RankingsJson);
+    
+    // Get players in R2
+    const r2Players = new Set();
+    r2pools.forEach(pool => {
+      pool.forEach(player => {
+        r2Players.add(player);
       });
-      
-      const r2rankings = r1rankings.filter(p => r2Players.has(p.name));
-      
-      let html = '<table class="score-table" style="width: 100%; margin-top: 1rem;"><thead><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>';
-      
-      r2rankings.forEach((player, idx) => {
-        html += '<tr><td>' + (idx + 1) + '</td><td>' + player.name + '</td><td style="color: #16a34a; font-weight: 600;">' + player.wins + '</td><td style="color: #dc2626; font-weight: 600;">' + player.losses + '</td><td style="color: #3b82f6; font-weight: 600;">' + player.diff + '</td><td>' + player.pf + '</td><td>' + player.pa + '</td></tr>';
-      });
-      
-      html += '</tbody></table><div style="margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 8px; font-size: 13px; color: #666;"><strong>' + r2rankings.length + ' of ' + r1rankings.length + '</strong> players advanced to Round 2</div>';
-      
-      document.getElementById('r2RankingsTableContent').innerHTML = html;
-      setTimeout(function() { loadR2RankingsTable(); }, 5000);
     });
+    
+    // Filter R1 rankings to only R2 players and keep their R1 stats
+    const r2rankings = r1rankings.filter(p => r2Players.has(p.name));
+    
+    // Create rankings table
+    let html = '<table class="score-table" style="width: 100%; margin-top: 1rem;">';
+    html += '<thead><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr></thead>';
+    html += '<tbody>';
+    
+    r2rankings.forEach((player, idx) => {
+      html += `<tr>
+        <td>${idx + 1}</td>
+        <td>${player.name}</td>
+        <td style="color: #16a34a; font-weight: 600;">${player.wins}</td>
+        <td style="color: #dc2626; font-weight: 600;">${player.losses}</td>
+        <td style="color: #3b82f6; font-weight: 600;">${player.diff}</td>
+        <td>${player.pf}</td>
+        <td>${player.pa}</td>
+      </tr>`;
+    });
+    
+    html += '</tbody></table>';
+    html += `<div style="margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 8px; font-size: 13px; color: #666;">
+      <strong style="color: #1f2937;">${r2rankings.length} of ${r1rankings.length}</strong> players advanced to Round 2<br>
+      <span style="font-size: 12px;">Showing Round 1 stats (W/L/Diff/PF/PA) for qualifying players</span>
+    </div>`;
+    
+    document.getElementById('r2RankingsTableContent').innerHTML = html;
+    
+    // Auto refresh every 5 seconds
+    setTimeout(() => loadR2RankingsTable(), 5000);
   } catch (e) {
     console.error('Error:', e);
-    document.getElementById('r2RankingsTableContent').innerHTML = '<div>Error: ' + e.message + '</div>';
+    document.getElementById('r2RankingsTableContent').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
 }
 
@@ -2323,129 +2356,86 @@ async function loadBracket() {
       const bracket = JSON.parse(data.bracketStructureJson);
       
       if (bracket.type === 'ncaa-pairs-separate') {
-        // Create card-based bracket display (like pool play)
         html = '<div style="max-width: 900px;">';
         
-        // Round 1
+        // Upper Round 1
         if (bracket.upper.round1.length > 0) {
-          html += '<div style="margin-bottom: 2.5rem;"><div style="font-weight: 700; font-size: 16px; margin-bottom: 1.5rem; padding: 0.75rem; background: #dbeafe; border-left: 4px solid #0891b2; border-radius: 4px;">UPPER BRACKET - ROUND 1</div>';
+          html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #dbeafe; border-left: 4px solid #0891b2; border-radius: 4px;">UPPER BRACKET - ROUND 1</div>';
           bracket.upper.round1.forEach((match, idx) => {
             const t1 = match.team1Players ? match.team1Players.join(' / ') : 'TBD';
             const t2 = match.team2Players ? match.team2Players.join(' / ') : 'TBD';
             const s1 = match.score1 !== null ? match.score1 : '--';
             const s2 = match.score2 !== null ? match.score2 : '--';
-            const gameId = `g${1000 + idx}`;
-            const isComplete = match.score1 !== null && match.score2 !== null;
-            const winnerClass = isComplete ? (match.score1 > match.score2 ? ' winner-team1' : ' winner-team2') : '';
-            
-            html += `<div class="score-card" style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 8px; cursor: pointer;" onclick="openScoringModal('${gameId}')">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <div style="flex: 1;"><div style="font-weight: 600; margin-bottom: 0.25rem;">${t1}</div></div>
-                <div style="font-weight: 700; font-size: 18px; color: #0891b2; width: 60px; text-align: center;">${s1}</div>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="flex: 1;"><div style="font-weight: 600;">${t2}</div></div>
-                <div style="font-weight: 700; font-size: 18px; color: #0891b2; width: 60px; text-align: center;">${s2}</div>
-              </div>
-              ${isComplete ? '<div style="margin-top: 0.5rem; font-size: 12px; color: #16a34a; font-weight: 600;">✓ Complete</div>' : '<div style="margin-top: 0.5rem; font-size: 12px; color: #666;">Click to score</div>'}
-            </div>`;
+            const gameId = 'g' + (1000 + idx);
+            const done = match.score1 !== null && match.score2 !== null;
+            html += '<div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 6px; cursor: pointer;" onclick="openScoringModal(\'' + gameId + '\')">';
+            html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + t1 + '</div><div style="font-weight: 700; color: #0891b2; width: 50px; text-align: center;">' + s1 + '</div></div>';
+            html += '<div style="display: flex; justify-content: space-between;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + t2 + '</div><div style="font-weight: 700; color: #0891b2; width: 50px; text-align: center;">' + s2 + '</div></div>';
+            if (done) html += '<div style="margin-top: 0.5rem; font-size: 11px; color: #16a34a; font-weight: 600;">✓ Complete</div>';
+            html += '</div>';
           });
           html += '</div>';
         }
         
-        // Lower Bracket Round 1
+        // Lower Round 1
         if (bracket.lower.round1.length > 0) {
-          html += '<div style="margin-bottom: 2.5rem;"><div style="font-weight: 700; font-size: 16px; margin-bottom: 1.5rem; padding: 0.75rem; background: #fee2e2; border-left: 4px solid #dc2626; border-radius: 4px;">LOWER BRACKET - ROUND 1</div>';
+          html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #fee2e2; border-left: 4px solid #dc2626; border-radius: 4px;">LOWER BRACKET - ROUND 1</div>';
           bracket.lower.round1.forEach((match, idx) => {
             const t1 = match.team1Players ? match.team1Players.join(' / ') : 'TBD';
             const t2 = match.team2Players ? match.team2Players.join(' / ') : 'TBD';
             const s1 = match.score1 !== null ? match.score1 : '--';
             const s2 = match.score2 !== null ? match.score2 : '--';
-            const gameId = `g${1006 + idx}`;
-            const isComplete = match.score1 !== null && match.score2 !== null;
-            
-            html += `<div class="score-card" style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 8px; cursor: pointer;" onclick="openScoringModal('${gameId}')">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <div style="flex: 1;"><div style="font-weight: 600; margin-bottom: 0.25rem;">${t1}</div></div>
-                <div style="font-weight: 700; font-size: 18px; color: #dc2626; width: 60px; text-align: center;">${s1}</div>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="flex: 1;"><div style="font-weight: 600;">${t2}</div></div>
-                <div style="font-weight: 700; font-size: 18px; color: #dc2626; width: 60px; text-align: center;">${s2}</div>
-              </div>
-              ${isComplete ? '<div style="margin-top: 0.5rem; font-size: 12px; color: #16a34a; font-weight: 600;">✓ Complete</div>' : '<div style="margin-top: 0.5rem; font-size: 12px; color: #666;">Click to score</div>'}
-            </div>`;
+            const gameId = 'g' + (1006 + idx);
+            const done = match.score1 !== null && match.score2 !== null;
+            html += '<div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 6px; cursor: pointer;" onclick="openScoringModal(\'' + gameId + '\')">';
+            html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + t1 + '</div><div style="font-weight: 700; color: #dc2626; width: 50px; text-align: center;">' + s1 + '</div></div>';
+            html += '<div style="display: flex; justify-content: space-between;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + t2 + '</div><div style="font-weight: 700; color: #dc2626; width: 50px; text-align: center;">' + s2 + '</div></div>';
+            if (done) html += '<div style="margin-top: 0.5rem; font-size: 11px; color: #16a34a; font-weight: 600;">✓ Complete</div>';
+            html += '</div>';
           });
           html += '</div>';
         }
         
-        // Upper Bracket Round 2
+        // Upper Round 2
         if (bracket.upper.round2.length > 0) {
-          html += '<div style="margin-bottom: 2.5rem;"><div style="font-weight: 700; font-size: 16px; margin-bottom: 1.5rem; padding: 0.75rem; background: #dbeafe; border-left: 4px solid #0891b2; border-radius: 4px;">UPPER BRACKET - ROUND 2</div>';
+          html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #dbeafe; border-left: 4px solid #0891b2; border-radius: 4px;">UPPER BRACKET - ROUND 2</div>';
           bracket.upper.round2.forEach((match, idx) => {
             const t1 = match.team1Players ? match.team1Players.join(' / ') : 'TBD';
             const t2 = match.team2Players ? match.team2Players.join(' / ') : 'TBD';
             const s1 = match.score1 !== null ? match.score1 : '--';
             const s2 = match.score2 !== null ? match.score2 : '--';
-            const gameId = `g${1004 + idx}`;
-            const isComplete = match.score1 !== null && match.score2 !== null;
-            
-            html += `<div class="score-card" style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 8px; cursor: pointer;" onclick="openScoringModal('${gameId}')">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <div style="flex: 1;"><div style="font-weight: 600; margin-bottom: 0.25rem;">${t1}</div></div>
-                <div style="font-weight: 700; font-size: 18px; color: #0891b2; width: 60px; text-align: center;">${s1}</div>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="flex: 1;"><div style="font-weight: 600;">${t2}</div></div>
-                <div style="font-weight: 700; font-size: 18px; color: #0891b2; width: 60px; text-align: center;">${s2}</div>
-              </div>
-              ${isComplete ? '<div style="margin-top: 0.5rem; font-size: 12px; color: #16a34a; font-weight: 600;">✓ Complete</div>' : '<div style="margin-top: 0.5rem; font-size: 12px; color: #666;">Click to score</div>'}
-            </div>`;
+            const gameId = 'g' + (1004 + idx);
+            const done = match.score1 !== null && match.score2 !== null;
+            html += '<div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 6px; cursor: pointer;" onclick="openScoringModal(\'' + gameId + '\')">';
+            html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + t1 + '</div><div style="font-weight: 700; color: #0891b2; width: 50px; text-align: center;">' + s1 + '</div></div>';
+            html += '<div style="display: flex; justify-content: space-between;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + t2 + '</div><div style="font-weight: 700; color: #0891b2; width: 50px; text-align: center;">' + s2 + '</div></div>';
+            if (done) html += '<div style="margin-top: 0.5rem; font-size: 11px; color: #16a34a; font-weight: 600;">✓ Complete</div>';
+            html += '</div>';
           });
           html += '</div>';
         }
         
-        // Lower Bracket Round 2
+        // Lower Round 2
         if (bracket.lower.round2.length > 0) {
-          html += '<div style="margin-bottom: 2.5rem;"><div style="font-weight: 700; font-size: 16px; margin-bottom: 1.5rem; padding: 0.75rem; background: #fee2e2; border-left: 4px solid #dc2626; border-radius: 4px;">LOWER BRACKET - ROUND 2</div>';
+          html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #fee2e2; border-left: 4px solid #dc2626; border-radius: 4px;">LOWER BRACKET - ROUND 2</div>';
           bracket.lower.round2.forEach((match, idx) => {
             const t1 = match.team1Players ? match.team1Players.join(' / ') : 'TBD';
             const t2 = match.team2Players ? match.team2Players.join(' / ') : 'TBD';
             const s1 = match.score1 !== null ? match.score1 : '--';
             const s2 = match.score2 !== null ? match.score2 : '--';
-            const gameId = `g${1007 + idx}`;
-            const isComplete = match.score1 !== null && match.score2 !== null;
-            
-            html += `<div class="score-card" style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 8px; cursor: pointer;" onclick="openScoringModal('${gameId}')">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <div style="flex: 1;"><div style="font-weight: 600; margin-bottom: 0.25rem;">${t1}</div></div>
-                <div style="font-weight: 700; font-size: 18px; color: #dc2626; width: 60px; text-align: center;">${s1}</div>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="flex: 1;"><div style="font-weight: 600;">${t2}</div></div>
-                <div style="font-weight: 700; font-size: 18px; color: #dc2626; width: 60px; text-align: center;">${s2}</div>
-              </div>
-              ${isComplete ? '<div style="margin-top: 0.5rem; font-size: 12px; color: #16a34a; font-weight: 600;">✓ Complete</div>' : '<div style="margin-top: 0.5rem; font-size: 12px; color: #666;">Click to score</div>'}
-            </div>`;
+            const gameId = 'g' + (1007 + idx);
+            const done = match.score1 !== null && match.score2 !== null;
+            html += '<div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 6px; cursor: pointer;" onclick="openScoringModal(\'' + gameId + '\')">';
+            html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + t1 + '</div><div style="font-weight: 700; color: #dc2626; width: 50px; text-align: center;">' + s1 + '</div></div>';
+            html += '<div style="display: flex; justify-content: space-between;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + t2 + '</div><div style="font-weight: 700; color: #dc2626; width: 50px; text-align: center;">' + s2 + '</div></div>';
+            if (done) html += '<div style="margin-top: 0.5rem; font-size: 11px; color: #16a34a; font-weight: 600;">✓ Complete</div>';
+            html += '</div>';
           });
           html += '</div>';
         }
         
         html += '</div>';
-                </div>
-                <div style="margin-top: 4px; font-size: 9px; color: #999;">
-                  ${finals.score1 !== null && finals.score2 !== null ? `${finals.score1} - ${finals.score2}` : '--'}
-                </div>
-              </div>
-            </div>`;
-          });
-          html += '</div>';
-        }
-        
-        html += '</div>';
-        
-        // Auto-refresh
-        setTimeout(() => loadBracket(), 5000);
+        setTimeout(function() { loadBracket(); }, 5000);
       } else if (bracket.type === 'ncaa-pairs') {
         html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">';
         
@@ -2905,5 +2895,6 @@ window.addEventListener('load', () => {
   }, 5000);
 });
 </script>
+
 </body>
 </html>
