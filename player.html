@@ -544,16 +544,6 @@ async function loadBracketGames() {
     document.getElementById('bracketGamesList').innerHTML = '<p style="text-align: center; color: #dc2626;">Error: ' + e.message + '</p>';
   }
 }
-      html = '<p style="text-align: center; color: #aaa;">No bracket games yet</p>';
-    }
-    
-    document.getElementById('bracketGamesList').innerHTML = html;
-    
-  } catch (e) {
-    console.error('Error loading bracket games:', e);
-    document.getElementById('bracketGamesList').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
-  }
-}
 
 async function loadGamesByRound(round) {
   try {
