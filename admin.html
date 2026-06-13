@@ -260,9 +260,9 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
   <button onclick="closeBracketTypeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">Choose Tournament Format for Round 2</div>
   <div style="display: flex; flex-direction: column; gap: 1rem;">
-    <button type="button" class="btn primary" onclick="generateUpperLowerBracket()" style="padding: 1rem; text-align: left;">
+    <button type="button" class="btn primary" onclick="generateBracket()" style="padding: 1rem; text-align: left;">
       <div style="font-weight: 600;">🏆 Single Elimination Bracket</div>
-      <div style="font-size: 12px; color: #ccc; margin-top: 4px;">Top half vs Bottom half - NCAA seeding style</div>
+      <div style="font-size: 12px; color: #ccc; margin-top: 4px;">Top players advance - winners only</div>
     </button>
     <button type="button" class="btn primary" onclick="showPoolPlayerCountModal()" style="padding: 1rem; text-align: left; background: #3b82f6; border-color: #3b82f6;">
       <div style="font-weight: 600;">🏊 Pool Play (Round 2)</div>
@@ -1746,6 +1746,84 @@ function closeBracketTypeModal() {
   document.getElementById('bracketTypeModal').style.display = 'none';
 }
 
+async function generateBracket() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    
+    // Check tournament type
+    if (data.tournamentType === 'kotc') {
+      // King of the Court: Use upper/lower bracket with 2v2 pairs
+      await generateUpperLowerBracket();
+    } else {
+      // Regular: Use simple single elimination
+      await generateSimpleBracket();
+    }
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+async function generateSimpleBracket() {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const ranked = JSON.parse(data.r1RankingsJson);
+    
+    // Get all players for single elimination
+    const allPlayers = ranked.map(p => p.name);
+    
+    // Create simple bracket matches (individual players, not pairs)
+    const createBracket = (players) => {
+      const round1 = [];
+      const n = players.length;
+      
+      // Seed 1 vs highest seed, 2 vs second highest, etc.
+      for (let i = 0; i < Math.floor(n / 2); i++) {
+        round1.push({
+          team1: players[i],
+          team2: players[n - 1 - i],
+          score1: null,
+          score2: null,
+          winner: null,
+          seed1: i + 1,
+          seed2: n - i
+        });
+      }
+      
+      return {
+        round1: round1,
+        round2: [],
+        finals: null,
+        champion: null
+      };
+    };
+    
+    const bracketStructure = {
+      type: 'simple-single-elimination',
+      bracket: createBracket(allPlayers)
+    };
+    
+    // Save bracket to Firestore
+    await db.collection('tournaments').doc(currentTourId).update({
+      bracketStructureJson: JSON.stringify(bracketStructure),
+      status: 'round2'
+    });
+    
+    closeBracketTypeModal();
+    showTab('bracket');
+    await loadBracket();
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
 async function generateUpperLowerBracket() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
@@ -2146,6 +2224,104 @@ async function advanceBracketWinners() {
     if (!data.bracketStructureJson) return;
     
     const bracket = JSON.parse(data.bracketStructureJson);
+    
+    // Handle simple single elimination brackets
+    if (bracket.type === 'simple-single-elimination') {
+      const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
+      const scores = {};
+      scoresSnap.forEach(scoreDoc => {
+        scores[scoreDoc.id] = scoreDoc.data();
+      });
+      
+      // Process R1 and advance winners to R2
+      let r1Complete = true;
+      const r1Winners = [];
+      bracket.bracket.round1.forEach((match, idx) => {
+        const gameId = 'g' + (1000 + idx);
+        if (scores[gameId]) {
+          match.score1 = scores[gameId].s1;
+          match.score2 = scores[gameId].s2;
+          if (scores[gameId].s1 > scores[gameId].s2) {
+            match.winner = match.team1;
+            r1Winners.push(match.team1);
+          } else {
+            match.winner = match.team2;
+            r1Winners.push(match.team2);
+          }
+        } else {
+          r1Complete = false;
+        }
+      });
+      
+      // Generate R2 from R1 winners if all R1 games complete
+      if (r1Complete && r1Winners.length > 0 && bracket.bracket.round2.length === 0) {
+        const round2 = [];
+        for (let i = 0; i < Math.floor(r1Winners.length / 2); i++) {
+          round2.push({
+            team1: r1Winners[i * 2],
+            team2: r1Winners[i * 2 + 1],
+            score1: null,
+            score2: null,
+            winner: null
+          });
+        }
+        bracket.bracket.round2 = round2;
+      }
+      
+      // Process R2 and advance winners to finals
+      if (bracket.bracket.round2.length > 0) {
+        let r2Complete = true;
+        const r2Winners = [];
+        bracket.bracket.round2.forEach((match, idx) => {
+          const gameId = 'g' + (2000 + idx);
+          if (scores[gameId]) {
+            match.score1 = scores[gameId].s1;
+            match.score2 = scores[gameId].s2;
+            if (scores[gameId].s1 > scores[gameId].s2) {
+              match.winner = match.team1;
+              r2Winners.push(match.team1);
+            } else {
+              match.winner = match.team2;
+              r2Winners.push(match.team2);
+            }
+          } else {
+            r2Complete = false;
+          }
+        });
+        
+        // Generate finals if R2 complete
+        if (r2Complete && r2Winners.length === 2 && !bracket.bracket.finals) {
+          bracket.bracket.finals = {
+            team1: r2Winners[0],
+            team2: r2Winners[1],
+            score1: null,
+            score2: null,
+            champion: null
+          };
+        }
+      }
+      
+      // Check for finals winner
+      if (bracket.bracket.finals) {
+        const finalsScore = scores['gfinals'];
+        if (finalsScore) {
+          bracket.bracket.finals.score1 = finalsScore.s1;
+          bracket.bracket.finals.score2 = finalsScore.s2;
+          if (finalsScore.s1 > finalsScore.s2) {
+            bracket.bracket.finals.champion = bracket.bracket.finals.team1;
+          } else {
+            bracket.bracket.finals.champion = bracket.bracket.finals.team2;
+          }
+        }
+      }
+      
+      // Save updated bracket
+      await db.collection('tournaments').doc(currentTourId).update({
+        bracketStructureJson: JSON.stringify(bracket)
+      });
+      return;
+    }
+    
     if (bracket.type !== 'ncaa-pairs-separate') return;
     
     const scoresSnap = await db.collection('tournaments').doc(currentTourId).collection('scores').get();
@@ -2355,7 +2531,58 @@ async function loadBracket() {
     if (isBracketSplit) {
       const bracket = JSON.parse(data.bracketStructureJson);
       
-      if (bracket.type === 'ncaa-pairs-separate') {
+      if (bracket.type === 'simple-single-elimination') {
+        // Simple single elimination bracket (regular tournaments)
+        html = '<div style="max-width: 900px;">';
+        
+        if (bracket.bracket.round1.length > 0) {
+          html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #3b82f6; border-left: 4px solid #0891b2; border-radius: 4px;">ROUND 1</div>';
+          bracket.bracket.round1.forEach((match, idx) => {
+            const s1 = match.score1 !== null ? match.score1 : '--';
+            const s2 = match.score2 !== null ? match.score2 : '--';
+            const gameId = 'g' + (1000 + idx);
+            const done = match.score1 !== null && match.score2 !== null;
+            html += '<div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 6px; cursor: pointer;" onclick="openScoringModal(\'' + gameId + '\')">';
+            html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><div style="flex: 1; font-weight: 600; font-size: 13px;">#' + match.seed1 + ' ' + match.team1 + '</div><div style="font-weight: 700; color: #3b82f6; width: 50px; text-align: center;">' + s1 + '</div></div>';
+            html += '<div style="display: flex; justify-content: space-between;"><div style="flex: 1; font-weight: 600; font-size: 13px;">#' + match.seed2 + ' ' + match.team2 + '</div><div style="font-weight: 700; color: #3b82f6; width: 50px; text-align: center;">' + s2 + '</div></div>';
+            if (done) html += '<div style="margin-top: 0.5rem; font-size: 11px; color: #16a34a; font-weight: 600;">✓ Complete</div>';
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+        
+        if (bracket.bracket.round2.length > 0) {
+          html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #3b82f6; border-left: 4px solid #0891b2; border-radius: 4px;">ROUND 2</div>';
+          bracket.bracket.round2.forEach((match, idx) => {
+            const s1 = match.score1 !== null ? match.score1 : '--';
+            const s2 = match.score2 !== null ? match.score2 : '--';
+            const gameId = 'g' + (2000 + idx);
+            const done = match.score1 !== null && match.score2 !== null;
+            html += '<div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 6px; cursor: pointer;" onclick="openScoringModal(\'' + gameId + '\')">';
+            html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + (match.team1 || 'TBD') + '</div><div style="font-weight: 700; color: #3b82f6; width: 50px; text-align: center;">' + s1 + '</div></div>';
+            html += '<div style="display: flex; justify-content: space-between;"><div style="flex: 1; font-weight: 600; font-size: 13px;">' + (match.team2 || 'TBD') + '</div><div style="font-weight: 700; color: #3b82f6; width: 50px; text-align: center;">' + s2 + '</div></div>';
+            if (done) html += '<div style="margin-top: 0.5rem; font-size: 11px; color: #16a34a; font-weight: 600;">✓ Complete</div>';
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+        
+        if (bracket.bracket.finals) {
+          const f = bracket.bracket.finals;
+          const s1 = f.score1 !== null ? f.score1 : '--';
+          const s2 = f.score2 !== null ? f.score2 : '--';
+          html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #fbbf24; border-left: 4px solid #f59e0b; border-radius: 4px;">FINALS</div>';
+          html += '<div style="padding: 1rem; background: #fff; border: 2px solid #f59e0b; border-radius: 6px; cursor: pointer;" onclick="openScoringModal(\'gfinals\')">';
+          html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;"><div style="flex: 1; font-weight: 700; font-size: 14px;">' + f.team1 + '</div><div style="font-weight: 700; color: #f59e0b; width: 50px; text-align: center; font-size: 16px;">' + s1 + '</div></div>';
+          html += '<div style="display: flex; justify-content: space-between;"><div style="flex: 1; font-weight: 700; font-size: 14px;">' + f.team2 + '</div><div style="font-weight: 700; color: #f59e0b; width: 50px; text-align: center; font-size: 16px;">' + s2 + '</div></div>';
+          if (f.champion) html += '<div style="margin-top: 0.75rem; padding: 0.75rem; background: #fef3c7; border-radius: 4px; font-weight: 700; text-align: center; color: #92400e;">🏆 ' + f.champion + '</div>';
+          html += '</div></div>';
+        }
+        
+        html += '</div>';
+        setTimeout(function() { loadBracket(); }, 5000);
+        
+      } else if (bracket.type === 'ncaa-pairs-separate') {
         html = '<div style="max-width: 900px;">';
         
         // Upper Round 1
