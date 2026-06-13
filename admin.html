@@ -2323,101 +2323,115 @@ async function loadBracket() {
       const bracket = JSON.parse(data.bracketStructureJson);
       
       if (bracket.type === 'ncaa-pairs-separate') {
-        html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; padding: 2rem; overflow-x: auto;">';
+        // Create card-based bracket display (like pool play)
+        html = '<div style="max-width: 900px;">';
         
-        // Helper to create visual bracket
-        const createVisualBracket = (bracketData, title, color) => {
-          const round1 = bracketData.round1 || [];
-          const round2 = bracketData.round2 || [];
-          let finals = bracketData.finals;
-          
-          // Auto-generate finals if R2 complete and finals empty
-          if (round2.length > 0 && !finals) {
-            const r2Winners = [];
-            round2.forEach(match => {
-              if (match.score1 !== null && match.score2 !== null) {
-                if (match.score1 > match.score2) {
-                  r2Winners.push({ players: match.team1Players, seeds: match.team1Seeds });
-                } else {
-                  r2Winners.push({ players: match.team2Players, seeds: match.team2Seeds });
-                }
-              }
-            });
+        // Round 1
+        if (bracket.upper.round1.length > 0) {
+          html += '<div style="margin-bottom: 2.5rem;"><div style="font-weight: 700; font-size: 16px; margin-bottom: 1.5rem; padding: 0.75rem; background: #dbeafe; border-left: 4px solid #0891b2; border-radius: 4px;">UPPER BRACKET - ROUND 1</div>';
+          bracket.upper.round1.forEach((match, idx) => {
+            const t1 = match.team1Players ? match.team1Players.join(' / ') : 'TBD';
+            const t2 = match.team2Players ? match.team2Players.join(' / ') : 'TBD';
+            const s1 = match.score1 !== null ? match.score1 : '--';
+            const s2 = match.score2 !== null ? match.score2 : '--';
+            const gameId = `g${1000 + idx}`;
+            const isComplete = match.score1 !== null && match.score2 !== null;
+            const winnerClass = isComplete ? (match.score1 > match.score2 ? ' winner-team1' : ' winner-team2') : '';
             
-            if (r2Winners.length === 2) {
-              finals = {
-                team1Players: r2Winners[0].players,
-                team1Seeds: r2Winners[0].seeds,
-                team2Players: r2Winners[1].players,
-                team2Seeds: r2Winners[1].seeds,
-                score1: null,
-                score2: null,
-                winner: null
-              };
-            }
-          }
-          
-          let bracketHtml = `<div>
-            <div style="font-weight: 600; font-size: 16px; margin-bottom: 2rem; padding: 0.75rem; background: ${color === 'upper' ? '#dbeafe' : '#fee2e2'}; border-radius: 8px; text-align: center; border: 2px solid ${color === 'upper' ? '#0891b2' : '#dc2626'};">${title}</div>
-            <div style="display: flex; gap: 3rem; min-width: 1000px; position: relative;">`;
-          
-          // Round 1
-          bracketHtml += '<div style="flex: 0 0 220px;"><div style="font-size: 11px; color: #666; margin-bottom: 1rem; font-weight: 600;">ROUND 1</div>';
-          round1.forEach((match, idx) => {
-            const borderColor = color === 'upper' ? '#0891b2' : '#dc2626';
-            bracketHtml += `
-              <div style="margin-bottom: 2rem; font-size: 10px;">
-                <div style="padding: 6px; background: #fff; border: 1px solid ${borderColor}; border-radius: 4px; margin-bottom: 2px;">
-                  <div style="font-weight: 600;">${match.team1Players[0]}</div>
-                  <div style="font-weight: 600;">${match.team1Players[1]}</div>
-                </div>
-                <div style="padding: 6px; background: #fff; border: 1px solid ${borderColor}; border-radius: 4px;">
-                  <div style="font-weight: 600;">${match.team2Players[0]}</div>
-                  <div style="font-weight: 600;">${match.team2Players[1]}</div>
-                </div>
-                <div style="margin-top: 4px; font-size: 9px; color: #999;">
-                  ${match.score1 !== null && match.score2 !== null ? `${match.score1} - ${match.score2}` : '--'}
-                </div>
+            html += `<div class="score-card" style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 8px; cursor: pointer;" onclick="openScoringModal('${gameId}')">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div style="flex: 1;"><div style="font-weight: 600; margin-bottom: 0.25rem;">${t1}</div></div>
+                <div style="font-weight: 700; font-size: 18px; color: #0891b2; width: 60px; text-align: center;">${s1}</div>
               </div>
-            `;
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;"><div style="font-weight: 600;">${t2}</div></div>
+                <div style="font-weight: 700; font-size: 18px; color: #0891b2; width: 60px; text-align: center;">${s2}</div>
+              </div>
+              ${isComplete ? '<div style="margin-top: 0.5rem; font-size: 12px; color: #16a34a; font-weight: 600;">✓ Complete</div>' : '<div style="margin-top: 0.5rem; font-size: 12px; color: #666;">Click to score</div>'}
+            </div>`;
           });
-          bracketHtml += '</div>';
-          
-          // Round 2
-          if (round2.length > 0) {
-            bracketHtml += '<div style="flex: 0 0 220px;"><div style="font-size: 11px; color: #666; margin-bottom: 1rem; font-weight: 600;">ROUND 2</div>';
-            round2.forEach((match, idx) => {
-              const borderColor = color === 'upper' ? '#0891b2' : '#dc2626';
-              bracketHtml += `
-                <div style="margin-bottom: 2rem; font-size: 10px;">
-                  <div style="padding: 6px; background: #fff; border: 1px solid ${borderColor}; border-radius: 4px; margin-bottom: 2px;">
-                    <div style="font-weight: 600;">${match.team1Players ? match.team1Players[0] : '-- TBD --'}</div>
-                    <div style="font-weight: 600;">${match.team1Players ? match.team1Players[1] : ''}</div>
-                  </div>
-                  <div style="padding: 6px; background: #fff; border: 1px solid ${borderColor}; border-radius: 4px;">
-                    <div style="font-weight: 600;">${match.team2Players ? match.team2Players[0] : '-- TBD --'}</div>
-                    <div style="font-weight: 600;">${match.team2Players ? match.team2Players[1] : ''}</div>
-                  </div>
-                  <div style="margin-top: 4px; font-size: 9px; color: #999;">
-                    ${match.score1 !== null && match.score2 !== null ? `${match.score1} - ${match.score2}` : '--'}
-                  </div>
-                </div>
-              `;
-            });
-            bracketHtml += '</div>';
-          }
-          
-          // Finals
-          if (finals) {
-            bracketHtml += `<div style="flex: 0 0 220px;"><div style="font-size: 11px; color: #666; margin-bottom: 1rem; font-weight: 600;">FINALS</div>
-              <div style="font-size: 10px;">
-                <div style="padding: 6px; background: #fff; border: 2px solid ${color === 'upper' ? '#0891b2' : '#dc2626'}; border-radius: 4px; margin-bottom: 2px;">
-                  <div style="font-weight: 600;">${finals.team1Players ? finals.team1Players[0] : '-- TBD --'}</div>
-                  <div style="font-weight: 600;">${finals.team1Players ? finals.team1Players[1] : ''}</div>
-                </div>
-                <div style="padding: 6px; background: #fff; border: 2px solid ${color === 'upper' ? '#0891b2' : '#dc2626'}; border-radius: 4px;">
-                  <div style="font-weight: 600;">${finals.team2Players ? finals.team2Players[0] : '-- TBD --'}</div>
-                  <div style="font-weight: 600;">${finals.team2Players ? finals.team2Players[1] : ''}</div>
+          html += '</div>';
+        }
+        
+        // Lower Bracket Round 1
+        if (bracket.lower.round1.length > 0) {
+          html += '<div style="margin-bottom: 2.5rem;"><div style="font-weight: 700; font-size: 16px; margin-bottom: 1.5rem; padding: 0.75rem; background: #fee2e2; border-left: 4px solid #dc2626; border-radius: 4px;">LOWER BRACKET - ROUND 1</div>';
+          bracket.lower.round1.forEach((match, idx) => {
+            const t1 = match.team1Players ? match.team1Players.join(' / ') : 'TBD';
+            const t2 = match.team2Players ? match.team2Players.join(' / ') : 'TBD';
+            const s1 = match.score1 !== null ? match.score1 : '--';
+            const s2 = match.score2 !== null ? match.score2 : '--';
+            const gameId = `g${1006 + idx}`;
+            const isComplete = match.score1 !== null && match.score2 !== null;
+            
+            html += `<div class="score-card" style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 8px; cursor: pointer;" onclick="openScoringModal('${gameId}')">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div style="flex: 1;"><div style="font-weight: 600; margin-bottom: 0.25rem;">${t1}</div></div>
+                <div style="font-weight: 700; font-size: 18px; color: #dc2626; width: 60px; text-align: center;">${s1}</div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;"><div style="font-weight: 600;">${t2}</div></div>
+                <div style="font-weight: 700; font-size: 18px; color: #dc2626; width: 60px; text-align: center;">${s2}</div>
+              </div>
+              ${isComplete ? '<div style="margin-top: 0.5rem; font-size: 12px; color: #16a34a; font-weight: 600;">✓ Complete</div>' : '<div style="margin-top: 0.5rem; font-size: 12px; color: #666;">Click to score</div>'}
+            </div>`;
+          });
+          html += '</div>';
+        }
+        
+        // Upper Bracket Round 2
+        if (bracket.upper.round2.length > 0) {
+          html += '<div style="margin-bottom: 2.5rem;"><div style="font-weight: 700; font-size: 16px; margin-bottom: 1.5rem; padding: 0.75rem; background: #dbeafe; border-left: 4px solid #0891b2; border-radius: 4px;">UPPER BRACKET - ROUND 2</div>';
+          bracket.upper.round2.forEach((match, idx) => {
+            const t1 = match.team1Players ? match.team1Players.join(' / ') : 'TBD';
+            const t2 = match.team2Players ? match.team2Players.join(' / ') : 'TBD';
+            const s1 = match.score1 !== null ? match.score1 : '--';
+            const s2 = match.score2 !== null ? match.score2 : '--';
+            const gameId = `g${1004 + idx}`;
+            const isComplete = match.score1 !== null && match.score2 !== null;
+            
+            html += `<div class="score-card" style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 8px; cursor: pointer;" onclick="openScoringModal('${gameId}')">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div style="flex: 1;"><div style="font-weight: 600; margin-bottom: 0.25rem;">${t1}</div></div>
+                <div style="font-weight: 700; font-size: 18px; color: #0891b2; width: 60px; text-align: center;">${s1}</div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;"><div style="font-weight: 600;">${t2}</div></div>
+                <div style="font-weight: 700; font-size: 18px; color: #0891b2; width: 60px; text-align: center;">${s2}</div>
+              </div>
+              ${isComplete ? '<div style="margin-top: 0.5rem; font-size: 12px; color: #16a34a; font-weight: 600;">✓ Complete</div>' : '<div style="margin-top: 0.5rem; font-size: 12px; color: #666;">Click to score</div>'}
+            </div>`;
+          });
+          html += '</div>';
+        }
+        
+        // Lower Bracket Round 2
+        if (bracket.lower.round2.length > 0) {
+          html += '<div style="margin-bottom: 2.5rem;"><div style="font-weight: 700; font-size: 16px; margin-bottom: 1.5rem; padding: 0.75rem; background: #fee2e2; border-left: 4px solid #dc2626; border-radius: 4px;">LOWER BRACKET - ROUND 2</div>';
+          bracket.lower.round2.forEach((match, idx) => {
+            const t1 = match.team1Players ? match.team1Players.join(' / ') : 'TBD';
+            const t2 = match.team2Players ? match.team2Players.join(' / ') : 'TBD';
+            const s1 = match.score1 !== null ? match.score1 : '--';
+            const s2 = match.score2 !== null ? match.score2 : '--';
+            const gameId = `g${1007 + idx}`;
+            const isComplete = match.score1 !== null && match.score2 !== null;
+            
+            html += `<div class="score-card" style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e4e0; border-radius: 8px; cursor: pointer;" onclick="openScoringModal('${gameId}')">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <div style="flex: 1;"><div style="font-weight: 600; margin-bottom: 0.25rem;">${t1}</div></div>
+                <div style="font-weight: 700; font-size: 18px; color: #dc2626; width: 60px; text-align: center;">${s1}</div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;"><div style="font-weight: 600;">${t2}</div></div>
+                <div style="font-weight: 700; font-size: 18px; color: #dc2626; width: 60px; text-align: center;">${s2}</div>
+              </div>
+              ${isComplete ? '<div style="margin-top: 0.5rem; font-size: 12px; color: #16a34a; font-weight: 600;">✓ Complete</div>' : '<div style="margin-top: 0.5rem; font-size: 12px; color: #666;">Click to score</div>'}
+            </div>`;
+          });
+          html += '</div>';
+        }
+        
+        html += '</div>';
                 </div>
                 <div style="margin-top: 4px; font-size: 9px; color: #999;">
                   ${finals.score1 !== null && finals.score2 !== null ? `${finals.score1} - ${finals.score2}` : '--'}
@@ -2428,11 +2442,9 @@ async function loadBracket() {
           
           bracketHtml += '</div></div>';
           return bracketHtml;
-        };
         
-        html += createVisualBracket(bracket.upper, '🏆 Upper Bracket (8 players)', 'upper');
-        html += createVisualBracket(bracket.lower, '🔽 Lower Bracket (6 players + Byes)', 'lower');
-        html += '</div>';
+        // Auto-refresh
+        setTimeout(() => loadBracket(), 5000);
       } else if (bracket.type === 'ncaa-pairs') {
         html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">';
         
