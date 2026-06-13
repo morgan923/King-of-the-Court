@@ -1858,64 +1858,50 @@ async function generateR2Pools() {
   }
 }
 
-async function loadR2RankingsTable() {
+function loadR2RankingsTable() {
   try {
-    if (!firebaseReady || !db || !currentTourId) return;
-    
-    const doc = await db.collection('tournaments').doc(currentTourId).get();
-    const data = doc.data();
-    
-    if (!data.r2poolsJson) {
-      document.getElementById('r2RankingsTableContent').innerHTML = '<p style="color: #aaa;">Round 2 not yet generated</p>';
+    if (!firebaseReady || !db || !currentTourId) {
       return;
     }
     
-    const r2pools = JSON.parse(data.r2poolsJson);
-    const r1rankings = JSON.parse(data.r1RankingsJson);
-    
-    // Get players in R2
-    const r2Players = new Set();
-    r2pools.forEach(pool => {
-      pool.forEach(player => {
-        r2Players.add(player);
+    db.collection('tournaments').doc(currentTourId).get().then(function(doc) {
+      const data = doc.data();
+      
+      if (!data.r2poolsJson) {
+        document.getElementById('r2RankingsTableContent').innerHTML = '<p style="color: #aaa;">Round 2 not yet generated</p>';
+        return;
+      }
+      
+      const r2pools = JSON.parse(data.r2poolsJson);
+      const r1rankings = JSON.parse(data.r1RankingsJson);
+      
+      const r2Players = new Set();
+      r2pools.forEach(pool => {
+        pool.forEach(player => {
+          r2Players.add(player);
+        });
       });
+      
+      const r2rankings = r1rankings.filter(p => r2Players.has(p.name));
+      
+      let html = '<table class="score-table" style="width: 100%; margin-top: 1rem;"><thead><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr></thead><tbody>';
+      
+      r2rankings.forEach((player, idx) => {
+        html += '<tr><td>' + (idx + 1) + '</td><td>' + player.name + '</td><td style="color: #16a34a; font-weight: 600;">' + player.wins + '</td><td style="color: #dc2626; font-weight: 600;">' + player.losses + '</td><td style="color: #3b82f6; font-weight: 600;">' + player.diff + '</td><td>' + player.pf + '</td><td>' + player.pa + '</td></tr>';
+      });
+      
+      html += '</tbody></table><div style="margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 8px; font-size: 13px; color: #666;"><strong>' + r2rankings.length + ' of ' + r1rankings.length + '</strong> players advanced to Round 2</div>';
+      
+      document.getElementById('r2RankingsTableContent').innerHTML = html;
+      setTimeout(function() { loadR2RankingsTable(); }, 5000);
     });
-    
-    // Filter R1 rankings to only R2 players and keep their R1 stats
-    const r2rankings = r1rankings.filter(p => r2Players.has(p.name));
-    
-    // Create rankings table
-    let html = '<table class="score-table" style="width: 100%; margin-top: 1rem;">';
-    html += '<thead><tr><th>#</th><th>Player</th><th>W</th><th>L</th><th>Diff</th><th>PF</th><th>PA</th></tr></thead>';
-    html += '<tbody>';
-    
-    r2rankings.forEach((player, idx) => {
-      html += `<tr>
-        <td>${idx + 1}</td>
-        <td>${player.name}</td>
-        <td style="color: #16a34a; font-weight: 600;">${player.wins}</td>
-        <td style="color: #dc2626; font-weight: 600;">${player.losses}</td>
-        <td style="color: #3b82f6; font-weight: 600;">${player.diff}</td>
-        <td>${player.pf}</td>
-        <td>${player.pa}</td>
-      </tr>`;
-    });
-    
-    html += '</tbody></table>';
-    html += `<div style="margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 8px; font-size: 13px; color: #666;">
-      <strong style="color: #1f2937;">${r2rankings.length} of ${r1rankings.length}</strong> players advanced to Round 2<br>
-      <span style="font-size: 12px;">Showing Round 1 stats (W/L/Diff/PF/PA) for qualifying players</span>
-    </div>`;
-    
-    document.getElementById('r2RankingsTableContent').innerHTML = html;
-    
-    // Auto refresh every 5 seconds
-    setTimeout(() => loadR2RankingsTable(), 5000);
   } catch (e) {
     console.error('Error:', e);
-    document.getElementById('r2RankingsTableContent').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
+    document.getElementById('r2RankingsTableContent').innerHTML = '<div>Error: ' + e.message + '</div>';
   }
 }
+
+async function loadR2Data() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
     
