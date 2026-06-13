@@ -2438,10 +2438,11 @@ async function loadBracket() {
                 </div>
               </div>
             </div>`;
-          }
-          
-          bracketHtml += '</div></div>';
-          return bracketHtml;
+          });
+          html += '</div>';
+        }
+        
+        html += '</div>';
         
         // Auto-refresh
         setTimeout(() => loadBracket(), 5000);
