@@ -408,7 +408,7 @@ async function loadRankings() {
   }
 }
 
-async function loadBracketGames(round) {
+async function loadBracketGames() {
   try {
     if (!firebaseReady || !db) return;
     
@@ -428,67 +428,122 @@ async function loadBracketGames(round) {
     });
     
     let html = '';
+    
+    // Handle simple single elimination brackets
+    if (bracket.type === 'simple-single-elimination') {
+      // Round 1
+      if (bracket.bracket.round1 && bracket.bracket.round1.length > 0) {
+        html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #3b82f6; border-left: 4px solid #0891b2; border-radius: 4px; color: #fff;">ROUND 1</div>';
+        bracket.bracket.round1.forEach((match, idx) => {
+          const gameId = 'g' + (1000 + idx);
+          const score = scores[gameId];
+          const s1 = score ? score.s1 : '–';
+          const s2 = score ? score.s2 : '–';
+          const isDone = score ? true : false;
+          html += '<div class="game-card" onclick="openScoringBracket(\'' + gameId + '\', \'' + match.team1 + '\', \'' + match.team2 + '\', ' + (score ? score.s1 : 0) + ', ' + (score ? score.s2 : 0) + ')" style="' + (isDone ? 'background: #f0fdf4; border-color: #16a34a;' : '') + '">';
+          html += '<div style="display: flex; align-items: center; justify-content: space-between;">';
+          html += '<div style="flex: 1; font-size: 13px; font-weight: 500;">#' + match.seed1 + ' ' + match.team1 + '</div>';
+          html += '<div style="font-weight: 600; color: ' + (isDone ? '#16a34a' : '#aaa') + '; min-width: 40px; text-align: center;">' + s1 + ' - ' + s2 + '</div>';
+          html += '<div style="flex: 1; text-align: right; font-size: 13px; font-weight: 500;">#' + match.seed2 + ' ' + match.team2 + '</div>';
+          html += '</div></div>';
+        });
+        html += '</div>';
+      }
+      
+      // Round 2
+      if (bracket.bracket.round2 && bracket.bracket.round2.length > 0) {
+        html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #3b82f6; border-left: 4px solid #0891b2; border-radius: 4px; color: #fff;">ROUND 2</div>';
+        bracket.bracket.round2.forEach((match, idx) => {
+          const gameId = 'g' + (2000 + idx);
+          const score = scores[gameId];
+          const s1 = score ? score.s1 : '–';
+          const s2 = score ? score.s2 : '–';
+          const isDone = score ? true : false;
+          html += '<div class="game-card" onclick="openScoringBracket(\'' + gameId + '\', \'' + (match.team1 || 'TBD') + '\', \'' + (match.team2 || 'TBD') + '\', ' + (score ? score.s1 : 0) + ', ' + (score ? score.s2 : 0) + ')" style="' + (isDone ? 'background: #f0fdf4; border-color: #16a34a;' : '') + '">';
+          html += '<div style="display: flex; align-items: center; justify-content: space-between;">';
+          html += '<div style="flex: 1; font-size: 13px; font-weight: 500;">' + (match.team1 || 'TBD') + '</div>';
+          html += '<div style="font-weight: 600; color: ' + (isDone ? '#16a34a' : '#aaa') + '; min-width: 40px; text-align: center;">' + s1 + ' - ' + s2 + '</div>';
+          html += '<div style="flex: 1; text-align: right; font-size: 13px; font-weight: 500;">' + (match.team2 || 'TBD') + '</div>';
+          html += '</div></div>';
+        });
+        html += '</div>';
+      }
+      
+      // Finals
+      if (bracket.bracket.finals) {
+        const f = bracket.bracket.finals;
+        const score = scores['gfinals'];
+        const s1 = score ? score.s1 : '–';
+        const s2 = score ? score.s2 : '–';
+        const isDone = score ? true : false;
+        html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #fbbf24; border-left: 4px solid #f59e0b; border-radius: 4px; color: #fff;">FINALS</div>';
+        html += '<div class="game-card" onclick="openScoringBracket(\'gfinals\', \'' + f.team1 + '\', \'' + f.team2 + '\', ' + (score ? score.s1 : 0) + ', ' + (score ? score.s2 : 0) + ')" style="' + (isDone ? 'background: #fef3c7; border-color: #f59e0b;' : '') + '">';
+        html += '<div style="display: flex; align-items: center; justify-content: space-between;">';
+        html += '<div style="flex: 1; font-size: 13px; font-weight: 600;">' + f.team1 + '</div>';
+        html += '<div style="font-weight: 700; color: ' + (isDone ? '#f59e0b' : '#aaa') + '; min-width: 40px; text-align: center; font-size: 14px;">' + s1 + ' - ' + s2 + '</div>';
+        html += '<div style="flex: 1; text-align: right; font-size: 13px; font-weight: 600;">' + f.team2 + '</div>';
+        html += '</div>';
+        if (f.champion) html += '<div style="margin-top: 0.75rem; padding: 0.5rem; background: #fff; border-radius: 4px; font-weight: 700; text-align: center; color: #92400e;">🏆 Champion: ' + f.champion + '</div>';
+        html += '</div></div>';
+      }
+      
+      document.getElementById('bracketGamesList').innerHTML = html || '<p style="text-align: center; color: #aaa;">No bracket games yet</p>';
+      return;
+    }
+    
+    // Handle NCAA brackets (upper/lower)
     const gameOffset = 1000;
     
     // Upper bracket Round 1
-    const upperR1 = bracket.upper.round1;
+    const upperR1 = bracket.upper ? bracket.upper.round1 : [];
     if (upperR1 && upperR1.length > 0) {
-      html += `<div style="margin-bottom: 2rem;">
-        <div style="font-weight: 600; font-size: 14px; margin-bottom: 0.5rem; padding: 8px; background: #dbeafe; border-radius: 6px; border-left: 4px solid #0891b2;">
-          🏆 Upper Bracket
-        </div>
-        <div>`;
+      html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 0.5rem; padding: 8px; background: #dbeafe; border-radius: 6px; border-left: 4px solid #0891b2;">🏆 Upper Bracket</div><div>';
       
       upperR1.forEach((match, idx) => {
-        const gameId = `g${gameOffset + idx}`;
+        const gameId = 'g' + (gameOffset + idx);
         const score = scores[gameId];
-        const scoreStr = score ? `${score.s1} - ${score.s2}` : '–';
+        const scoreStr = score ? score.s1 + ' - ' + score.s2 : '–';
         const scoreColor = score ? '#16a34a' : '#aaa';
         
-        html += `
-          <div class="game-card" onclick="openScoring('${gameId}', '${match.team1Players.join(' & ')}', '${match.team2Players.join(' & ')}', ${score ? score.s1 : 0}, ${score ? score.s2 : 0}, 4)" style="${score ? 'background: #f0fdf4; border-color: #16a34a;' : ''}">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <div style="flex: 1; font-size: 13px; font-weight: 500;">${match.team1Players.join(' & ')}</div>
-              <div style="font-weight: 600; color: ${scoreColor}; min-width: 40px; text-align: center;">${scoreStr}</div>
-              <div style="flex: 1; text-align: right; font-size: 13px; font-weight: 500;">${match.team2Players.join(' & ')}</div>
-            </div>
-          </div>
-        `;
+        html += '<div class="game-card" onclick="openScoringBracket(\'' + gameId + '\', \'' + match.team1Players.join(' & ') + '\', \'' + match.team2Players.join(' & ') + '\', ' + (score ? score.s1 : 0) + ', ' + (score ? score.s2 : 0) + ')" style="' + (score ? 'background: #f0fdf4; border-color: #16a34a;' : '') + '">';
+        html += '<div style="display: flex; align-items: center; justify-content: space-between;">';
+        html += '<div style="flex: 1; font-size: 13px; font-weight: 500;">' + match.team1Players.join(' & ') + '</div>';
+        html += '<div style="font-weight: 600; color: ' + scoreColor + '; min-width: 40px; text-align: center;">' + scoreStr + '</div>';
+        html += '<div style="flex: 1; text-align: right; font-size: 13px; font-weight: 500;">' + match.team2Players.join(' & ') + '</div>';
+        html += '</div></div>';
       });
       
       html += '</div></div>';
     }
     
     // Lower bracket Round 1
-    const lowerR1 = bracket.lower.round1;
+    const lowerR1 = bracket.lower ? bracket.lower.round1 : [];
     if (lowerR1 && lowerR1.length > 0) {
-      html += `<div style="margin-bottom: 2rem;">
-        <div style="font-weight: 600; font-size: 14px; margin-bottom: 0.5rem; padding: 8px; background: #fee2e2; border-radius: 6px; border-left: 4px solid #dc2626;">
-          🔽 Lower Bracket
-        </div>
-        <div>`;
+      html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 600; font-size: 14px; margin-bottom: 0.5rem; padding: 8px; background: #fee2e2; border-radius: 6px; border-left: 4px solid #dc2626;">🔽 Lower Bracket</div><div>';
       
       lowerR1.forEach((match, idx) => {
-        const gameId = `g${gameOffset + 4 + idx}`;
+        const gameId = 'g' + (gameOffset + 6 + idx);
         const score = scores[gameId];
-        const scoreStr = score ? `${score.s1} - ${score.s2}` : '–';
+        const scoreStr = score ? score.s1 + ' - ' + score.s2 : '–';
         const scoreColor = score ? '#16a34a' : '#aaa';
         
-        html += `
-          <div class="game-card" onclick="openScoring('${gameId}', '${match.team1Players.join(' & ')}', '${match.team2Players.join(' & ')}', ${score ? score.s1 : 0}, ${score ? score.s2 : 0}, 4)" style="${score ? 'background: #f0fdf4; border-color: #16a34a;' : ''}">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-              <div style="flex: 1; font-size: 13px; font-weight: 500;">${match.team1Players.join(' & ')}</div>
-              <div style="font-weight: 600; color: ${scoreColor}; min-width: 40px; text-align: center;">${scoreStr}</div>
-              <div style="flex: 1; text-align: right; font-size: 13px; font-weight: 500;">${match.team2Players.join(' & ')}</div>
-            </div>
-          </div>
-        `;
+        html += '<div class="game-card" onclick="openScoringBracket(\'' + gameId + '\', \'' + match.team1Players.join(' & ') + '\', \'' + match.team2Players.join(' & ') + '\', ' + (score ? score.s1 : 0) + ', ' + (score ? score.s2 : 0) + ')" style="' + (score ? 'background: #f0fdf4; border-color: #16a34a;' : '') + '">';
+        html += '<div style="display: flex; align-items: center; justify-content: space-between;">';
+        html += '<div style="flex: 1; font-size: 13px; font-weight: 500;">' + match.team1Players.join(' & ') + '</div>';
+        html += '<div style="font-weight: 600; color: ' + scoreColor + '; min-width: 40px; text-align: center;">' + scoreStr + '</div>';
+        html += '<div style="flex: 1; text-align: right; font-size: 13px; font-weight: 500;">' + match.team2Players.join(' & ') + '</div>';
+        html += '</div></div>';
       });
       
       html += '</div></div>';
     }
     
-    if (!html) {
+    document.getElementById('bracketGamesList').innerHTML = html || '<p style="text-align: center; color: #aaa;">No bracket games yet</p>';
+  } catch (e) {
+    console.error('Error:', e);
+    document.getElementById('bracketGamesList').innerHTML = '<p style="text-align: center; color: #dc2626;">Error: ' + e.message + '</p>';
+  }
+}
       html = '<p style="text-align: center; color: #aaa;">No bracket games yet</p>';
     }
     
@@ -676,6 +731,25 @@ function listenToScores() {
 function openScoring(gameId, team1, team2, s1 = 0, s2 = 0, poolSize = null) {
   currentGameId = gameId;
   currentGame = { team1, team2, poolSize };
+  currentScore = { s1: s1, s2: s2 };
+  
+  document.getElementById('gameTitle').textContent = `${team1} vs ${team2}`;
+  document.getElementById('team1Name').textContent = team1;
+  document.getElementById('team2Name').textContent = team2;
+  document.getElementById('score1').textContent = s1;
+  document.getElementById('score2').textContent = s2;
+  document.getElementById('directScore1').value = s1;
+  document.getElementById('directScore2').value = s2;
+  
+  updateTeamStyles();
+  updateSubmitButton();
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('modal').classList.add('active');
+}
+
+function openScoringBracket(gameId, team1, team2, s1 = 0, s2 = 0) {
+  currentGameId = gameId;
+  currentGame = { team1, team2, isBracket: true };
   currentScore = { s1: s1, s2: s2 };
   
   document.getElementById('gameTitle').textContent = `${team1} vs ${team2}`;
