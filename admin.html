@@ -256,6 +256,24 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 <!-- Recreate R2 Overlay -->
 
 <div class="overlay" id="recreateR2Overlay"></div>
+<!-- Bracket Player Count Modal -->
+<div class="modal" id="bracketPlayerCountModal" style="max-width: 400px;">
+  <button onclick="closeBracketPlayerCountModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+  <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">How many top players for bracket?</div>
+  <div style="margin-bottom: 1.5rem;">
+    <input type="number" id="bracketPlayerCount" min="2" max="999" placeholder="Enter number" style="width: 100%; padding: 0.75rem; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 14px; margin-bottom: 0.5rem;">
+    <div style="font-size: 11px; color: #999;" id="bracketPlayerPreview"></div>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <button type="button" class="btn primary" onclick="submitBracketPlayerCount()" style="flex: 1;">Create Bracket</button>
+    <button type="button" class="btn" onclick="closeBracketPlayerCountModal()" style="flex: 1;">Cancel</button>
+  </div>
+</div>
+
+<!-- Bracket Player Count Overlay -->
+
+<div class="overlay" id="bracketPlayerCountOverlay"></div>
+
 <div class="modal" id="bracketTypeModal" style="max-width: 500px;">
   <button onclick="closeBracketTypeModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">Choose Tournament Format for Round 2</div>
@@ -1753,14 +1771,137 @@ async function generateBracket() {
     const doc = await db.collection('tournaments').doc(currentTourId).get();
     const data = doc.data();
     
-    // Check tournament type
+    // Show player count modal
+    document.getElementById('bracketPlayerCount').value = '';
+    document.getElementById('bracketPlayerPreview').innerHTML = '';
+    
+    const playerInput = document.getElementById('bracketPlayerCount');
+    playerInput.oninput = function() {
+      const count = parseInt(this.value) || 0;
+      if (count >= 2) {
+        const byeInfo = count % 2 === 1 ? ' (top seed gets bye)' : '';
+        document.getElementById('bracketPlayerPreview').innerHTML = `✓ ${count} players${byeInfo}`;
+      } else if (count > 0) {
+        document.getElementById('bracketPlayerPreview').innerHTML = `<span style="color: #dc2626;">Minimum 2 players</span>`;
+      } else {
+        document.getElementById('bracketPlayerPreview').innerHTML = '';
+      }
+    };
+    
+    document.getElementById('bracketPlayerCountOverlay').style.display = 'block';
+    document.getElementById('bracketPlayerCountModal').style.display = 'block';
+    playerInput.focus();
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+function closeBracketPlayerCountModal() {
+  document.getElementById('bracketPlayerCountOverlay').style.display = 'none';
+  document.getElementById('bracketPlayerCountModal').style.display = 'none';
+}
+
+async function submitBracketPlayerCount() {
+  try {
+    const playerCount = parseInt(document.getElementById('bracketPlayerCount').value);
+    
+    if (!playerCount || playerCount < 2) {
+      alert('Please enter at least 2 players');
+      return;
+    }
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    
+    if (playerCount > data.players.length) {
+      alert(`Cannot exceed ${data.players.length} total players`);
+      return;
+    }
+    
+    closeBracketPlayerCountModal();
+    
+    // Check tournament type and create appropriate bracket
     if (data.tournamentType === 'kotc') {
-      // King of the Court: Use upper/lower bracket with 2v2 pairs
       await generateUpperLowerBracket();
     } else {
-      // Regular: Use simple single elimination
-      await generateSimpleBracket();
+      await generateSimpleBracketWithCount(playerCount);
     }
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+async function generateSimpleBracketWithCount(playerCount) {
+  try {
+    if (!firebaseReady || !db || !currentTourId) return;
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    const ranked = JSON.parse(data.r1RankingsJson);
+    
+    // Get top N players
+    const bracketPlayers = ranked.slice(0, playerCount).map(p => p.name);
+    const hasOddBye = playerCount % 2 === 1;
+    
+    // Create bracket matches with bye logic
+    const round1 = [];
+    
+    if (hasOddBye) {
+      // Top seed gets bye, others play
+      const others = bracketPlayers.slice(1); // All except top seed
+      const n = others.length;
+      
+      // Seed the remaining players: last vs second, second-to-last vs third, etc.
+      for (let i = 0; i < Math.floor(n / 2); i++) {
+        round1.push({
+          team1: others[i],
+          team2: others[n - 1 - i],
+          score1: null,
+          score2: null,
+          winner: null,
+          seed1: i + 2,
+          seed2: n - i + 1
+        });
+      }
+    } else {
+      // All play, standard seeding
+      const n = bracketPlayers.length;
+      for (let i = 0; i < Math.floor(n / 2); i++) {
+        round1.push({
+          team1: bracketPlayers[i],
+          team2: bracketPlayers[n - 1 - i],
+          score1: null,
+          score2: null,
+          winner: null,
+          seed1: i + 1,
+          seed2: n - i
+        });
+      }
+    }
+    
+    const bracketStructure = {
+      type: 'simple-single-elimination',
+      hasOddBye: hasOddBye,
+      topSeedBye: hasOddBye ? bracketPlayers[0] : null,
+      bracket: {
+        round1: round1,
+        round2: [],
+        finals: null,
+        champion: null
+      }
+    };
+    
+    // Save bracket to Firestore
+    await db.collection('tournaments').doc(currentTourId).update({
+      bracketStructureJson: JSON.stringify(bracketStructure),
+      status: 'round2'
+    });
+    
+    closeBracketPlayerCountModal();
+    showTab('bracket');
+    await loadBracket();
   } catch (e) {
     console.error('Error:', e);
     alert('Error: ' + e.message);
@@ -2253,20 +2394,22 @@ async function advanceBracketWinners() {
         }
       });
       
-      // Generate R2 from R1 winners if all R1 games complete
-      if (r1Complete && r1Winners.length > 0 && bracket.bracket.round2.length === 0) {
-        const round2 = [];
-        for (let i = 0; i < Math.floor(r1Winners.length / 2); i++) {
-          round2.push({
-            team1: r1Winners[i * 2],
-            team2: r1Winners[i * 2 + 1],
-            score1: null,
-            score2: null,
-            winner: null
-          });
-        }
-        bracket.bracket.round2 = round2;
+    // Generate R2 from R1 winners if all R1 games complete
+    if (r1Complete && r1Winners.length > 0 && bracket.bracket.round2.length === 0) {
+      const round2 = [];
+      const allR2Teams = bracket.hasOddBye ? [bracket.topSeedBye, ...r1Winners] : r1Winners;
+      
+      for (let i = 0; i < Math.floor(allR2Teams.length / 2); i++) {
+        round2.push({
+          team1: allR2Teams[i * 2],
+          team2: allR2Teams[i * 2 + 1],
+          score1: null,
+          score2: null,
+          winner: null
+        });
       }
+      bracket.bracket.round2 = round2;
+    }
       
       // Process R2 and advance winners to finals
       if (bracket.bracket.round2.length > 0) {
@@ -2534,6 +2677,11 @@ async function loadBracket() {
       if (bracket.type === 'simple-single-elimination') {
         // Simple single elimination bracket (regular tournaments)
         html = '<div style="max-width: 900px;">';
+        
+        // Show bye if applicable
+        if (bracket.hasOddBye) {
+          html += '<div style="margin-bottom: 2rem; padding: 1rem; background: #dbeafe; border-radius: 8px; border-left: 4px solid #0891b2;"><div style="font-weight: 700; color: #0891b2; font-size: 13px;">🏆 #1 BYE</div><div style="font-size: 13px; font-weight: 600; margin-top: 0.5rem;">' + bracket.topSeedBye + ' advances directly to Round 2</div></div>';
+        }
         
         if (bracket.bracket.round1.length > 0) {
           html += '<div style="margin-bottom: 2rem;"><div style="font-weight: 700; font-size: 14px; margin-bottom: 1rem; padding: 0.75rem; background: #3b82f6; border-left: 4px solid #0891b2; border-radius: 4px;">ROUND 1</div>';
