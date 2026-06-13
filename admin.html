@@ -111,6 +111,7 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 <div id="bracketTab" class="hidden">
   <div class="card">
     <div class="card-title">Tournament Bracket & Standings</div>
+    <button class="btn" id="editBracketBtn" onclick="showEditBracketModal()" style="display: none; background: #f59e0b; color: #fff; border-color: #f59e0b; margin-bottom: 1rem;">✏️ Edit Bracket</button>
     <div id="bracketContent"></div>
   </div>
 </div>
@@ -256,7 +257,26 @@ input { padding: 8px 12px; border: 1px solid #d5d4d0; border-radius: 6px; font-s
 <!-- Recreate R2 Overlay -->
 
 <div class="overlay" id="recreateR2Overlay"></div>
+<!-- Edit Bracket Modal -->
+<div class="modal" id="editBracketModal" style="max-width: 400px;">
+  <button onclick="closeEditBracketModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+  <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">Edit Bracket - New Player Count</div>
+  <div style="margin-bottom: 1.5rem;">
+    <input type="number" id="editBracketPlayerCount" min="2" max="999" placeholder="Enter number" style="width: 100%; padding: 0.75rem; border: 1px solid #d5d4d0; border-radius: 6px; font-size: 14px; margin-bottom: 0.5rem;">
+    <div style="font-size: 11px; color: #999;" id="editBracketPlayerPreview"></div>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <button type="button" class="btn primary" onclick="submitEditBracket()" style="flex: 1; background: #f59e0b; border-color: #f59e0b;">Regenerate Bracket</button>
+    <button type="button" class="btn" onclick="closeEditBracketModal()" style="flex: 1;">Cancel</button>
+  </div>
+</div>
+
+<!-- Edit Bracket Overlay -->
+
+<div class="overlay" id="editBracketOverlay"></div>
+
 <!-- Bracket Player Count Modal -->
+
 <div class="modal" id="bracketPlayerCountModal" style="max-width: 400px;">
   <button onclick="closeBracketPlayerCountModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
   <div style="font-weight: 600; margin-bottom: 1.5rem; font-size: 14px;">How many top players for bracket?</div>
@@ -2613,6 +2633,67 @@ async function advanceBracketWinners() {
   }
 }
 
+function showEditBracketModal() {
+  try {
+    if (!currentTourId) return;
+    
+    document.getElementById('editBracketPlayerCount').value = '';
+    document.getElementById('editBracketPlayerPreview').innerHTML = '';
+    
+    const playerInput = document.getElementById('editBracketPlayerCount');
+    playerInput.oninput = function() {
+      const count = parseInt(this.value) || 0;
+      if (count >= 2) {
+        const byeInfo = count % 2 === 1 ? ' (top seed gets bye)' : '';
+        document.getElementById('editBracketPlayerPreview').innerHTML = `✓ ${count} players${byeInfo}`;
+      } else if (count > 0) {
+        document.getElementById('editBracketPlayerPreview').innerHTML = `<span style="color: #dc2626;">Minimum 2 players</span>`;
+      } else {
+        document.getElementById('editBracketPlayerPreview').innerHTML = '';
+      }
+    };
+    
+    document.getElementById('editBracketOverlay').style.display = 'block';
+    document.getElementById('editBracketModal').style.display = 'block';
+    playerInput.focus();
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+function closeEditBracketModal() {
+  document.getElementById('editBracketOverlay').style.display = 'none';
+  document.getElementById('editBracketModal').style.display = 'none';
+}
+
+async function submitEditBracket() {
+  try {
+    const playerCount = parseInt(document.getElementById('editBracketPlayerCount').value);
+    
+    if (!playerCount || playerCount < 2) {
+      alert('Please enter at least 2 players');
+      return;
+    }
+    
+    const doc = await db.collection('tournaments').doc(currentTourId).get();
+    const data = doc.data();
+    
+    if (playerCount > data.players.length) {
+      alert(`Cannot exceed ${data.players.length} total players`);
+      return;
+    }
+    
+    closeEditBracketModal();
+    
+    // Regenerate bracket with new count
+    await generateSimpleBracketWithCount(playerCount);
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
 async function loadBracket() {
   try {
     if (!firebaseReady || !db || !currentTourId) return;
@@ -2670,6 +2751,13 @@ async function loadBracket() {
     
     // Check if this is NCAA bracket format
     const isBracketSplit = data.bracketStructureJson && !data.r2poolsJson;
+    
+    // Show/hide edit bracket button
+    if (isBracketSplit && data.tournamentType !== 'kotc') {
+      document.getElementById('editBracketBtn').style.display = 'inline-block';
+    } else {
+      document.getElementById('editBracketBtn').style.display = 'none';
+    }
     
     if (isBracketSplit) {
       const bracket = JSON.parse(data.bracketStructureJson);
