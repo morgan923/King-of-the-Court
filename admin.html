@@ -2885,6 +2885,25 @@ window.addEventListener('load', () => {
     console.log('Calling loadTournamentList after delay. firebaseReady:', firebaseReady);
     loadTournamentList();
   }, 100);
+  
+  // If Firebase still isn't ready after 5 seconds, show error
+  setTimeout(() => {
+    if (!firebaseReady) {
+      console.error('Firebase failed to initialize after 5 seconds');
+      document.getElementById('tourListContainer').innerHTML = `
+        <div style="padding: 20px; color: #dc2626; text-align: center; background: #fee2e2; border-radius: 8px;">
+          <div style="font-weight: 600; margin-bottom: 0.5rem;">⚠️ Connection Error</div>
+          <div style="font-size: 13px; margin-bottom: 1rem;">Firebase failed to initialize. Check:</div>
+          <div style="font-size: 12px; text-align: left; background: #fff; padding: 0.75rem; border-radius: 4px; color: #1f2937;">
+            • Internet connection<br>
+            • Browser console (F12) for errors<br>
+            • Firebase config is correct<br>
+            • Try refreshing the page
+          </div>
+        </div>
+      `;
+    }
+  }, 5000);
 });
 </script>
 </body>
